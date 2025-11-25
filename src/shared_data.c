@@ -9,11 +9,23 @@ data* createSharedData(){
     int shm_fd = shm_open("/webServer_shm", O_CREAT | O_RDWR, 0666);
     if(shm_fd == -1) return NULL; // Failed to create shm
 
+    // Try to set shared memory size to size of data
+    if (ftruncate(shm_fd, sizeof(data)) == -1) {
+        close(shm_fd);
+        return NULL;
+    }
+
     // CREATE shared map with size of data with ability to read or write to using the shm file descriptor
     data* sData = mmap(NULL, sizeof(data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0); 
     close(shm_fd);
 
     if(sData = MAP_FAILED) return NULL; // MAP CREATION FAILED
+
+    // Instancialize queue variables
+    sData->queue.head = 0;
+    sData->queue.tail = 0;
+    sData->queue.size = 0;
+
     memset(sData, 0, sizeof(data));
     return sData;
 }
@@ -42,4 +54,9 @@ int sockDequeue(connectionQueue* q){
     q->size--;
 
     return clientFd;
+}
+
+int IsQueueEmpty(connectionQueue* q){
+    // If tail and head are in the same position queue is empty
+    return q->tail == q->head;
 }

@@ -33,4 +33,7 @@ void sockEnqueue(connectionQueue* q, int clientFd);
 // Takes first client socket file descriptor from queue
 int sockDequeue(connectionQueue* q);
 
+// Returns 1 if queue is empty and 0 if not
+int IsQueueEmpty(connectionQueue* q);
+
 #endif
