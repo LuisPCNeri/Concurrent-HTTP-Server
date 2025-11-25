@@ -1,7 +1,8 @@
 #include <stdlib.h>
 #include "threadPool.h"
+#include "worker.h"
 
-threadPool* CreateThreadPool(int threadNum, void* workerThread){
+threadPool* CreateThreadPool(int threadNum){
     // Allocs space for thread pool
     threadPool* pool = malloc(sizeof(threadPool));
 
@@ -14,7 +15,7 @@ threadPool* CreateThreadPool(int threadNum, void* workerThread){
     pthread_cond_init(&pool->tCond, NULL);
 
     // Loop to create all the threads to populate the array
-    for(unsigned int i = 0; i < threadNum; i++) pthread_create(&pool->threads[i], NULL, workerThread, &pool);
+    for(unsigned int i = 0; i < threadNum; i++) pthread_create(&pool->threads[i], NULL, &workerThread, &pool);
 
     return pool;
 }
@@ -26,9 +27,10 @@ void DestroyThreadPool(threadPool* pool){
     }
 
     // Clean up all thread related stuff on thread pool
+    pthread_cond_destroy(&pool->tCond);
+    pthread_mutex_destroy(&pool->tMutex);
+
     free(pool->threads);
-    free(&pool->tMutex);
-    free(&pool->tCond);
 
     // Free the actual thread pool allocated memory
     free(&pool);

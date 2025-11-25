@@ -18,6 +18,6 @@ typedef struct{
 threadPool* CreateThreadPool(int threadNum, void* workerThread);
 
 // Frees memory occupied by thread pool struct
-void DestroyThreadPool(threadPool tPool);
+void DestroyThreadPool(threadPool* tPool);
 
 #endif
