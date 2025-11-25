@@ -4,18 +4,22 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <http.h>
+
+#include "http.h"
 
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
 const char* response =
     "HTTP/1.1 200 OK\r\n"
+    "Access-Control-Allow-Origin: *\r\n"
     "Content-Type: text/html\r\n"
     "\r\n"
     "<html><body><h1>Hello, World! HEHEHEHA</h1></body></html>";
 
 // Sends file in cosnt char* path to int client_fd
-void send_file(int client_fd, const char* path){
+void sendFile(int client_fd, const char* path){
     FILE* file = fopen(path, "rb");
 
     if(!file){
@@ -56,67 +60,38 @@ void send_file(int client_fd, const char* path){
     }
 
     fclose(file);
-} 
+}
 
-int main(void){
+int parseHttpRequest(const char* buffer, httpRequest* request){
+    char* line_end = strstr(buffer, "\r\n");
+    if (!line_end) return -1;
 
-    // Created socket using IPv4 sockets (AF_INET) as TCP packets (SOCK_STREAM) without specifying a protocol
-    int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-    
-    // Throws an error if socket stream creation fails
-    if(socket_fd < 0){
-        perror("Socket Failed.");
-        exit(EXIT_FAILURE);
-    }
-    
-    int sock_option = 1;
-    // SETS SO_REUSEADDR to 1 to specify that bind() SHOULD allow reuse of local addresses
-    setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &sock_option, sizeof(sock_option));
+    char first_line[1024];
 
-    struct sockaddr_in socket_addr = {0};
-    // Specifies connetions will be IPv4
-    socket_addr.sin_family = AF_INET;
-    // To accept connections from ANY network interface
-    socket_addr.sin_addr.s_addr = INADDR_ANY;
-    // Converts from host to network byte order
-    socket_addr.sin_port = htons(PORT);
+    size_t len = line_end - buffer;
+    strncpy(first_line, buffer, len);
+    first_line[len] = '\0';
 
-    // Binds the socket stream to the address set before
-    // Socket will LISTEN to any clients that try to connet to port 8080
-    if( bind(socket_fd, (struct sockaddr *) &socket_addr, sizeof(socket_addr)) < 0){
-        perror("Could not bin socket");
-        exit(EXIT_FAILURE);
-    }
-
-    // Takes a MAXIMUM of 10 connetions as is set there
-    if( listen(socket_fd, 10) < 0 ){
-        perror("Failed on listen");
-        exit(EXIT_FAILURE);
-    }
-
-    printf("HTTP server running on http://localhost:8080\n");
-
-    // Infinite loop to ALWAYS listen for connections
-    while(1){
-        // Extracts the FIRST connection in the queque of pending connections
-        int client_fd = accept(socket_fd, NULL, NULL);
-
-        char buffer[BUFFER_SIZE];
-        // Returns length of received message (received message FROM CLIENT) in bytes
-        ssize_t bytes_read = recv(client_fd, buffer, sizeof(buffer), 0);
-
-        if(bytes_read > 0){
-            buffer[bytes_read] = '\0';
-            printf("Received: %s\n", buffer);
-        }
-
-        // SENDS const void * buf MESSAGE WITH size_t n LENGTH to int __fd SOCKET returns number of bytes sent
-        send(client_fd, response, strlen(response), 0);
-
-        send_file(client_fd, "/home/luisp/concurrent-http-server/test.txt");
-        // Closes connection
-        close(client_fd);
+    if (sscanf(first_line, "%s %s %s", request->method, request->path, request->version)!= 3) {
+        return -1;
     }
 
     return 0;
+}
+
+void sendHttpResponse(int clientFd, int status, const char* statusMsg, const char* cType, const char* body, size_t bodyLen){
+    char header[2048];
+
+    int header_len = snprintf(header, sizeof(header),
+        "HTTP/1.1 %d %s\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
+        "Content-Type: %s\r\n"
+        "Content-Length: %zu\r\n"
+        "Server: ConcurrentHTTP/1.0\r\n"
+        "Connection: close\r\n"
+        "\r\n",
+    status, statusMsg, cType, bodyLen);
+
+    send(clientFd, header, header_len, 0);
+    if(body && bodyLen > 0) send(clientFd, body, bodyLen, 0);
 }

@@ -3,10 +3,14 @@
 #include <unistd.h>
 #include <sys/mman.h>
 #include <semaphore.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <string.h>
 
 #include "shared_data.h"
 #include "threadPool.h"
 #include "worker.h"
+#include "http.h"
 #include "semaphores.h"
 
 void* workerThread(void* arg){
@@ -55,7 +59,23 @@ void* workerThread(void* arg){
         sem_post(filledSem);
         sem_post(queueMutex);
 
-        // TODO HTTP logic
+        char buffer[4096];
+        // Receive the http request
+        ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
+        if(bytesRead > 0){
+            buffer[bytesRead] = "\0";
+            printf("Received: %s\n", buffer);
+        }
+
+        httpRequest request;
+        if(parseHttpRequest(buffer, &request) == -1){
+            return NULL;
+        }
+
+        sendHttpResponse(clientFd, 200, "OK", "text/html", "<html><body><h1>Hello, World!</h1></body></html>", 
+            strlen("<html><body><h1>Hello, World!</h1></body></html>"));
+        
+        close(clientFd);
 
         pthread_mutex_unlock(&pool->tMutex);
     }
