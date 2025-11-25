@@ -2,7 +2,7 @@
 #include "threadPool.h"
 #include "worker.h"
 
-threadPool* CreateThreadPool(int threadNum){
+threadPool* CreateThreadPool(int threadNum, void* workerThread){
     // Allocs space for thread pool
     threadPool* pool = malloc(sizeof(threadPool));
 
