@@ -15,7 +15,7 @@ typedef struct{
 // Creates a thread pool with threadNum number of active threads
 // that start with the execution of workerThread ROUTINE
 // workerThread MUST take in at least one void* arg argument
-threadPool* CreateThreadPool(int threadNum, void* workerThread);
+threadPool* CreateThreadPool(int threadNum);
 
 // Frees memory occupied by thread pool struct
 void DestroyThreadPool(threadPool* tPool);
