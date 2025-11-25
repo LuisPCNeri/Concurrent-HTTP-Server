@@ -13,7 +13,7 @@
 
 const char* response =
     "HTTP/1.1 200 OK\r\n"
-    "Access-Control-Allow-Origin: *\n"
+    "Access-Control-Allow-Origin: *\r\n"
     "Content-Type: text/html\r\n"
     "\r\n"
     "<html><body><h1>Hello, World! HEHEHEHA</h1></body></html>";
@@ -84,6 +84,7 @@ void sendHttpResponse(int clientFd, int status, const char* statusMsg, const cha
 
     int header_len = snprintf(header, sizeof(header),
         "HTTP/1.1 %d %s\r\n"
+        "Access-Control-Allow-Origin: *\r\n"
         "Content-Type: %s\r\n"
         "Content-Length: %zu\r\n"
         "Server: ConcurrentHTTP/1.0\r\n"
