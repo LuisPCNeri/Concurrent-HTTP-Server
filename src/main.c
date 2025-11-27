@@ -1,5 +1,5 @@
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
@@ -12,35 +12,53 @@
 #include "master.h"
 #include "http.h"
 
-int main(int argc, char* argv[]){
+semaphore* sem;
+// Socket Pair
+int sv[2];
 
-    // Init shared data
-    data* sharedData = createSharedData();
-
-    // Init semaphores
-    semaphore* sem;
-    int sems = initSemaphores(sem, 100);
-
-    createForks(3);
-    
-    int socketFd = createServerSocket(8080);
-
-    while(1){
-        int clientFd = acceptConnection(socketFd, sharedData, sem);
-    }
-}
-
-static void createForks(int nForks){
+pid_t createForks(int nForks){
     pid_t pid;
+    pid_t parentId;
     if(nForks > 0){
         if( (pid = fork()) < 0) perror("Error creating separate processes :(");
         else if(pid == 0){
             // CHILD PROCESS
-            CreateThreadPool(10);
+            printf("Created child process %d\n", getpid());
+            close(sv[0]);
+            threadPool* pool = CreateThreadPool(10, sem);
+
+            DestroyThreadPool(pool);
         }
         else{
             // PARENTE PROCESS
+            parentId = getpid();
             createForks(nForks - 1);
         }
+    }
+    return parentId;
+}
+
+int main(void){
+    // Create Socket Pair
+    if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sv)  == -1) perror("Socket pair: ");
+    // Init shared data
+    data* sharedData = createSharedData(sv);
+
+    // Init semaphores
+
+    pid_t parentId = createForks(3);
+    
+    if(getpid() == parentId){
+        sleep(1);
+
+        sem_post(sharedData->sem->emptySlots);
+        sem_post(sharedData->sem->queueMutex);
+
+        close(sv[1]);
+        int socketFd = createServerSocket(8080);
+
+        while(1){
+            acceptConnection(socketFd, sharedData, sem, sv);
+        }        
     }
 }

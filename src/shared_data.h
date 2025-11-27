@@ -3,6 +3,8 @@
 
 #define MAX_QUEUE_SIZE 100
 
+#include "semaphores.h"
+
 typedef struct{
     long totalRequests;
     long bytesTransferred;
@@ -23,9 +25,11 @@ typedef struct{
 typedef struct{
     connectionQueue queue;
     serverStats stats;
+    semaphore* sem;
+    int sv[2];
 } data;
 
-data* createSharedData();
+data* createSharedData(int* sv);
 void destroySharedData(data*);
 
 // Adds client socket file descriptor to queue in shared data

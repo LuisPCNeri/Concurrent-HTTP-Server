@@ -14,3 +14,18 @@ Guilherme Mendes Martins NMEC ??????
     -https://pubs.opengroup.org/onlinepubs/009695399/basedefs/netinet/in.h.html
     -https://pubs.opengroup.org/onlinepubs/007904875/basedefs/sys/mman.h.html
     -https://pubs.opengroup.org/onlinepubs/7908799/xsh/semaphore.h.html
+    -https://stackoverflow.com/questions/29331938/what-things-are-exactly-happening-when-server-socket-accept-client-sockets
+    -https://stackoverflow.com/questions/11461106/socketpair-in-c-unix
+    -https://www.ibm.com/docs/en/ztpf/1.1.2025?topic=apis-socketpair-create-pair-connected-sockets
+    -https://www.ibm.com/docs/en/i/7.6.0?topic=processes-example-worker-program-used-sendmsg-recvmsg
+    -https://www.geeksforgeeks.org/c/memset-c-example/
+    -https://stackoverflow.com/questions/8481138/how-to-use-sendmsg-to-send-a-file-descriptor-via-sockets-between-2-processes
+    -https://www.quora.com/How-can-you-pass-file-descriptors-between-processes-in-Unix
+    -https://stackoverflow.com/questions/1788095/descriptor-passing-with-unix-domain-sockets
+    -https://stackoverflow.com/questions/14721005/connect-socket-operation-on-non-socket
+    -https://stackoverflow.com/questions/2358684/can-i-share-a-file-descriptor-to-another-process-on-linux-or-are-they-local-to-t
+    -https://www.ibm.com/docs/en/zos/3.2.0?topic=calls-sendmsg
+    -https://linux.die.net/man/7/unix
+    -https://linux.die.net/man/3/cmsg
+    -https://www.ibm.com/docs/en/zos/2.5.0?topic=functions-sendmsg-send-messages-socket
+    -https://stackoverflow.com/questions/8359322/how-to-share-semaphores-between-processes-using-shared-memory

@@ -1,6 +1,9 @@
-#include <stdlib.h>
-#include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "semaphores.h"
 #include "http.h"
 #include "shared_data.h"
@@ -9,7 +12,6 @@
 int createServerSocket(int port){
     // Created socket using IPv4 sockets (AF_INET) as TCP packets (SOCK_STREAM) without specifying a protocol
     int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-    
     // Throws an error if socket stream creation fails
     if(socket_fd < 0){
         perror("Socket Failed.");
@@ -31,7 +33,7 @@ int createServerSocket(int port){
     // Binds the socket stream to the address set before
     // Socket will LISTEN to any clients that try to connet to port 8080
     if( bind(socket_fd, (struct sockaddr *) &socket_addr, sizeof(socket_addr)) < 0){
-        perror("Could not bin socket");
+        perror("Could not bind socket");
         exit(EXIT_FAILURE);
     }
 
@@ -41,38 +43,68 @@ int createServerSocket(int port){
         exit(EXIT_FAILURE);
     }
 
-    printf("HTTP server running on http://localhost:%d\n", port);
+    printf("============== HTTP server running on http://localhost:%d ==============\n", port);
 
     return socket_fd;
 }
 
-int acceptConnection(int socketFd, data* sharedData, semaphore* sem){
+int acceptConnection(int socketFd, data* sharedData, semaphore* sem, int* sv){
     // TODO there should be a check to see if queue is full before accepting
     // If queue is full send 503 Server Failure response
 
+    printf("WAINTING ON ACCEPT ================================\n");
+
+    int clientFd;
+    if( (clientFd = accept(socketFd, NULL, NULL)) == -1 ){
+        printf("ERROR\n");
+    }
+
+    sem_wait(sharedData->sem->emptySlots);
+    sem_wait(sharedData->sem->queueMutex);
+
+    char buf[1] = {0}; 
+    struct iovec io = { .iov_base = buf, .iov_len = 1 };
+
+    struct msghdr pMsg;
+    memset(&pMsg, 0 ,sizeof(pMsg));
+    struct cmsghdr* cmsg;
+    char cmsgbuff[CMSG_SPACE(sizeof(clientFd))];
+    pMsg.msg_control = cmsgbuff;
+    pMsg.msg_controllen = sizeof(cmsgbuff);
+
+    cmsg = CMSG_FIRSTHDR(&pMsg);
+    cmsg->cmsg_level = SOL_SOCKET;
+    cmsg->cmsg_type = SCM_RIGHTS;
+    cmsg->cmsg_len = CMSG_LEN(sizeof(clientFd));
+
+    *((int *) CMSG_DATA(cmsg)) = clientFd;
+
+    pMsg.msg_controllen = cmsg->cmsg_len;
+
+    pMsg.msg_iov = &io;
+    pMsg.msg_iovlen = 1;
+
+    printf("SENDING\n");
+
+    if( sendmsg(sv[0], &pMsg, 0) < 0) perror("Send message");
+
+    close(clientFd);
+    sem_post(sharedData->sem->queueMutex);
+    sem_post(sharedData->sem->filledSlots);
     // If queue is not full
     // CONNECTION ACCPETED
-    int clientFd = accept(socketFd, NULL, NULL);
-    
+
+
+    printf("Connection %d Accepted\n", clientFd);
     // Block the semaphore for access to the stats struct
-    sem_wait(sem->statsMutex);
+    sem_wait(sharedData->sem->statsMutex);
     // Update active conncetion count
     sharedData->stats.activeConnetions++;
-    sem_post(sem->statsMutex);
+    printf("STATS NOW : %d\n", sharedData->stats.activeConnetions);
+
+    sem_post(sharedData->sem->statsMutex);
 
     // Added connection in clientFd socket to the connection queue in shared data
-    enqueueCon(clientFd, sharedData, sem);
-}
 
-// Adds a connection on socket clientFd to the connection queue in shared memory
-static void enqueueCon(int clientFd, data* sharedData, semaphore* sem){
-    // Locks the queque and empty slots semaphore so no other threads can use them
-    sem_wait(sem->emptySlots);
-    sem_wait(sem->queueMutex);
-
-    sockEnqueue(&sharedData->queue, clientFd);
-
-    // Unlocks the semaphores
-    sem_post(sem->emptySlots);
-    sem_post(sem->queueMutex);
-}
+    return 0;
+}   

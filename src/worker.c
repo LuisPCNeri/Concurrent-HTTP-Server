@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/mman.h>
@@ -16,9 +17,10 @@
 void* workerThread(void* arg){
     // Convert argument passed on thread create in threadPool.c to 
     threadPool* pool = (threadPool*) arg;
+    semaphore* sems = pool->sems;
     
     // Open shared memory segment to use
-    int shmFd = shm_open("/webServer_shm", O_RDWR, NULL);
+    int shmFd = shm_open("/web_server_shm", O_RDWR, 0666);
     if(shmFd == -1) return NULL;    // Failed to create shm
 
     // Try to set shared memory size to size of data
@@ -30,53 +32,94 @@ void* workerThread(void* arg){
     data* sData = mmap(NULL, sizeof(data), PROT_READ | PROT_WRITE, MAP_SHARED, shmFd, 0);
     close(shmFd);
 
-    if(sData == MAP_FAILED) return NULL; // Failed to create the map
+    if(sData == MAP_FAILED){
+        perror("MAP");
+        return NULL;
+    }; // Failed to create the map
 
     // Main logic loop
     while(1){
         // Lock the mutex
         pthread_mutex_lock(&pool->tMutex);
 
-        while(!pool->shutdown && IsQueueEmpty(&sData->queue))
-            pthread_cond_wait(&pool->tCond, &pool->tMutex);
-        
         if(pool->shutdown){
-            pthread_mutex_unlock(&pool->tMutex);
+            printf("SHUTDOWN\n");
             break;
         }
 
-        // Get the filleSlots and queueMutex semaphores
-        sem_t* filledSem = sem_open("/wsFilled", O_RDWR); 
-        sem_t* queueMutex = sem_open("/wsQueueMutex", O_RDWR);
+        pthread_mutex_unlock(&pool->tMutex);
 
-        // Lock the semaphores
-        sem_wait(filledSem);
-        sem_wait(queueMutex);
+        // Wait here for an empty
 
-        int clientFd = sockDequeue(&sData->queue);
+        int* clientFd;
 
-        // Unlock semaphores
-        sem_post(filledSem);
-        sem_post(queueMutex);
+        char msg_buffer[80];
+        struct iovec iov[1];
+
+        iov[0].iov_base = msg_buffer;
+        iov[0].iov_len  = sizeof(msg_buffer);
+
+        struct msghdr cMsg;
+        memset(&cMsg, 0, sizeof(cMsg));
+        char cmsgbuff[CMSG_SPACE(sizeof(int))];
+        cMsg.msg_iov = iov;
+        cMsg.msg_iovlen = 1;
+        cMsg.msg_control = cmsgbuff;
+        cMsg.msg_controllen = sizeof(cmsgbuff);
+
+        printf("WAITING ON RECEIVING\n");
+        ssize_t rc = recvmsg(sData->sv[1], &cMsg, 0);
+
+        sem_post(sData->sem->emptySlots);
+
+        if(rc < 0){
+            perror("recvmsg failed");
+            exit(-1);
+        }
+
+
+        struct cmsghdr* cmsg = CMSG_FIRSTHDR(&cMsg);
+        clientFd = (int*) CMSG_DATA(cmsg);
+        
+
+        if (cmsg == NULL || cmsg->cmsg_type != SCM_RIGHTS) {
+            printf("The first control structure contains no file descriptor.\n");
+            continue;
+        }
+
+        //int clientFd = sockDequeue(&sData->queue);
+        printf("Serving %d ON process %d\n", *clientFd, getpid());
 
         char buffer[4096];
         // Receive the http request
-        ssize_t bytesRead = recv(clientFd, buffer, sizeof(buffer), 0);
+        ssize_t bytesRead = recv(*clientFd, buffer, sizeof(buffer) - 1, 0);
+        if(bytesRead == -1){
+            perror("RECEIVED");
+            exit(-1);
+            sem_post(sems->queueMutex);
+            continue;
+        }
+        printf("BYTES READ %d\n", (int) bytesRead);
         if(bytesRead > 0){
-            buffer[bytesRead] = "\0";
-            printf("Received: %s\n", buffer);
+            buffer[bytesRead] = '\0';
+            //printf("Received: %s\n", buffer);
         }
 
-        httpRequest request;
-        if(parseHttpRequest(buffer, &request) == -1){
-            return NULL;
+        httpRequest* request = malloc(sizeof(httpRequest));
+        if(parseHttpRequest(buffer, request) == -1){
+            printf("NOT good request\n");
+            free(request);
+            close(*clientFd);
+            continue;
         }
 
-        sendHttpResponse(clientFd, 200, "OK", "text/html", "<html><body><h1>Hello, World!</h1></body></html>", 
+        sendHttpResponse(*clientFd, 200, "OK", "text/html", "<html><body><h1>Hello, World!</h1></body></html>", 
             strlen("<html><body><h1>Hello, World!</h1></body></html>"));
         
-        close(clientFd);
-
-        pthread_mutex_unlock(&pool->tMutex);
+        if(close(*clientFd) == -1) perror("CLOSE");
     }
+
+    printf("I EXITED????\n");
+
+    return NULL;
 }

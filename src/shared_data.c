@@ -3,10 +3,12 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
 
-data* createSharedData(){
+data* createSharedData(int* sv){
     // Create shared memory for read or write
-    int shm_fd = shm_open("/webServer_shm", O_CREAT | O_RDWR, 0666);
+    int shm_fd = shm_open("/web_server_shm", O_CREAT | O_RDWR, 0666);
     if(shm_fd == -1) return NULL; // Failed to create shm
 
     // Try to set shared memory size to size of data
@@ -19,14 +21,24 @@ data* createSharedData(){
     data* sData = mmap(NULL, sizeof(data), PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0); 
     close(shm_fd);
 
-    if(sData = MAP_FAILED) return NULL; // MAP CREATION FAILED
+    if(sData == MAP_FAILED) {
+        perror("MAP");
+        return NULL;
+    }; // MAP CREATION FAILED
+
+    memset(sData, 0, sizeof(data));
 
     // Instancialize queue variables
     sData->queue.head = 0;
     sData->queue.tail = 0;
-    sData->queue.size = 0;
+    sData->queue.size = 1;
 
-    memset(sData, 0, sizeof(data));
+    sData->sem = (semaphore*) malloc(sizeof(semaphore));
+    initSemaphores(sData->sem, 100);
+
+    sData->sv[0] = sv[0];
+    sData->sv[1] = sv[1];
+
     return sData;
 }
 

@@ -92,6 +92,8 @@ void sendHttpResponse(int clientFd, int status, const char* statusMsg, const cha
         "\r\n",
     status, statusMsg, cType, bodyLen);
 
-    send(clientFd, header, header_len, 0);
+    if(send(clientFd, header, header_len, 0) == -1) perror("SEND");
     if(body && bodyLen > 0) send(clientFd, body, bodyLen, 0);
+
+    printf("SENT %s\n", body);
 }
