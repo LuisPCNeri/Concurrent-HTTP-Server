@@ -42,8 +42,6 @@ int main(void){
     // TODO Add config file parsing
     // TODO Add options to program
     
-    // Create Socket Pair
-    if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sv)  == -1) perror("Socket pair: ");
     // Init shared data
     data* sharedData = createSharedData(sv);
 
@@ -61,7 +59,7 @@ int main(void){
         int socketFd = createServerSocket(8080);
 
         while(1){
-            acceptConnection(socketFd, sharedData, sem, sv);
+            acceptConnection(socketFd, sharedData);
         }        
     }
 }

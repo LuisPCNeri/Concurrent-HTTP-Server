@@ -5,6 +5,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/socket.h>
 
 data* createSharedData(int* sv){
     // Create shared memory for read or write
@@ -36,8 +37,31 @@ data* createSharedData(int* sv){
     sData->sem = (semaphore*) malloc(sizeof(semaphore));
     initSemaphores(sData->sem, 100);
 
-    sData->sv[0] = sv[0];
-    sData->sv[1] = sv[1];
+    // Create socket pair
+    if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sData->sv)  == -1) perror("Socket pair: ");
+
+    return sData;
+}
+
+data* getSharedData(char* name){
+    // Open shared memory segment to use
+    int shmFd = shm_open(name, O_RDWR, 0666);
+    if(shmFd == -1) return NULL;    // Failed to create shm
+
+    // Try to set shared memory size to size of data
+    if (ftruncate(shmFd, sizeof(data)) == -1) {
+        close(shmFd);
+        return NULL;
+    }
+
+    // Set up a pointer to mapped region
+    data* sData = mmap(NULL, sizeof(data), PROT_READ | PROT_WRITE, MAP_SHARED, shmFd, 0);
+    close(shmFd);
+
+    if(sData == MAP_FAILED){
+        perror("MAP");
+        return NULL;
+    }; // Failed to create the map
 
     return sData;
 }

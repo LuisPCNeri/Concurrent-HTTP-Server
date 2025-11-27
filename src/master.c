@@ -4,10 +4,12 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+
 #include "semaphores.h"
 #include "http.h"
 #include "shared_data.h"
 #include "master.h"
+#include "logger.h"
 
 int createServerSocket(int port){
     // Created socket using IPv4 sockets (AF_INET) as TCP packets (SOCK_STREAM) without specifying a protocol
@@ -48,7 +50,7 @@ int createServerSocket(int port){
     return socket_fd;
 }
 
-int acceptConnection(int socketFd, data* sharedData, semaphore* sem, int* sv){
+int acceptConnection(int socketFd, data* sharedData){
     // TODO there should be a check to see if queue is full before accepting
     // If queue is full send 503 Server Failure response
 
@@ -59,6 +61,7 @@ int acceptConnection(int socketFd, data* sharedData, semaphore* sem, int* sv){
     if( (clientFd = accept(socketFd, NULL, NULL)) == -1 ){
         printf("ERROR\n");
     }
+    serverLog("Accepted connection");
 
     sem_wait(sharedData->sem->emptySlots);
     sem_wait(sharedData->sem->queueMutex);
@@ -85,9 +88,7 @@ int acceptConnection(int socketFd, data* sharedData, semaphore* sem, int* sv){
     pMsg.msg_iov = &io;
     pMsg.msg_iovlen = 1;
 
-    printf("SENDING\n");
-
-    if( sendmsg(sv[0], &pMsg, 0) < 0) perror("Send message");
+    if( sendmsg(sharedData->sv[0], &pMsg, 0) < 0) perror("Send message");
 
     close(clientFd);
     sem_post(sharedData->sem->queueMutex);

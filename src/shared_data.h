@@ -29,7 +29,11 @@ typedef struct{
     int sv[2];
 } data;
 
+// Creates a mapped region with data using sv[2] as a socket pair to communicate between processes
 data* createSharedData(int* sv);
+
+// Gets the data with NAME name
+data* getSharedData(char* name);
 void destroySharedData(data*);
 
 // Adds client socket file descriptor to queue in shared data

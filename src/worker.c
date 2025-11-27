@@ -13,29 +13,14 @@
 #include "worker.h"
 #include "http.h"
 #include "semaphores.h"
+#include "logger.h"
 
 void* workerThread(void* arg){
     // Convert argument passed on thread create in threadPool.c to 
     threadPool* pool = (threadPool*) arg;
     semaphore* sems = pool->sems;
     
-    // Open shared memory segment to use
-    int shmFd = shm_open("/web_server_shm", O_RDWR, 0666);
-    if(shmFd == -1) return NULL;    // Failed to create shm
-
-    // Try to set shared memory size to size of data
-    if (ftruncate(shmFd, sizeof(data)) == -1) {
-        close(shmFd);
-        return NULL;
-    }
-
-    data* sData = mmap(NULL, sizeof(data), PROT_READ | PROT_WRITE, MAP_SHARED, shmFd, 0);
-    close(shmFd);
-
-    if(sData == MAP_FAILED){
-        perror("MAP");
-        return NULL;
-    }; // Failed to create the map
+    data* sData = getSharedData("/web_server_shm");
 
     // Main logic loop
     while(1){
@@ -93,6 +78,7 @@ void* workerThread(void* arg){
         char buffer[4096];
         // Receive the http request
         ssize_t bytesRead = recv(*clientFd, buffer, sizeof(buffer) - 1, 0);
+        serverLog("Received request");
         if(bytesRead == -1){
             perror("RECEIVED");
             exit(-1);
@@ -115,8 +101,10 @@ void* workerThread(void* arg){
 
         sendHttpResponse(*clientFd, 200, "OK", "text/html", "<html><body><h1>Hello, World!</h1></body></html>", 
             strlen("<html><body><h1>Hello, World!</h1></body></html>"));
+        serverLog("Sent data");
         
         if(close(*clientFd) == -1) perror("CLOSE");
+        serverLog("Closed connection");
 
         // TODO Decrease active connection counter
     }
