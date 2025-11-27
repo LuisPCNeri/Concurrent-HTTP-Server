@@ -49,6 +49,7 @@ void* workerThread(void* arg){
 
         pthread_mutex_unlock(&pool->tMutex);
 
+        // TODO Implement use of semaphores for thread safety (or equivalent)
         // Wait here for an empty
 
         int* clientFd;
@@ -67,7 +68,6 @@ void* workerThread(void* arg){
         cMsg.msg_control = cmsgbuff;
         cMsg.msg_controllen = sizeof(cmsgbuff);
 
-        printf("WAITING ON RECEIVING\n");
         ssize_t rc = recvmsg(sData->sv[1], &cMsg, 0);
 
         sem_post(sData->sem->emptySlots);
@@ -117,6 +117,8 @@ void* workerThread(void* arg){
             strlen("<html><body><h1>Hello, World!</h1></body></html>"));
         
         if(close(*clientFd) == -1) perror("CLOSE");
+
+        // TODO Decrease active connection counter
     }
 
     printf("I EXITED????\n");

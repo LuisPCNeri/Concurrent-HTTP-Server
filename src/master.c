@@ -55,6 +55,7 @@ int acceptConnection(int socketFd, data* sharedData, semaphore* sem, int* sv){
     printf("WAINTING ON ACCEPT ================================\n");
 
     int clientFd;
+    // TODO Log Connection accepted
     if( (clientFd = accept(socketFd, NULL, NULL)) == -1 ){
         printf("ERROR\n");
     }

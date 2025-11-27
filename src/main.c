@@ -39,6 +39,9 @@ pid_t createForks(int nForks){
 }
 
 int main(void){
+    // TODO Add config file parsing
+    // TODO Add options to program
+    
     // Create Socket Pair
     if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sv)  == -1) perror("Socket pair: ");
     // Init shared data

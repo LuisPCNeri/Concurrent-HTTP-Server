@@ -79,8 +79,12 @@ int parseHttpRequest(const char* buffer, httpRequest* request){
     return 0;
 }
 
+// TODO Make createHttpResponse function and httpResponse type with status, statusMessage, cType, body, bodyLen attributes
+
 void sendHttpResponse(int clientFd, int status, const char* statusMsg, const char* cType, const char* body, size_t bodyLen){
     char header[2048];
+
+    //TODO Add response stats to shared memory stats
 
     int header_len = snprintf(header, sizeof(header),
         "HTTP/1.1 %d %s\r\n"
