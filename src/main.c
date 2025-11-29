@@ -11,12 +11,13 @@
 #include "worker.h"
 #include "master.h"
 #include "http.h"
+#include "config.h"
 
 semaphore* sem;
 // Socket Pair
 int sv[2];
 
-pid_t createForks(int nForks){
+static pid_t createForks(int nForks, serverConf* conf){
     pid_t pid;
     pid_t parentId;
     if(nForks > 0){
@@ -25,29 +26,32 @@ pid_t createForks(int nForks){
             // CHILD PROCESS
             printf("Created child process %d\n", getpid());
             close(sv[0]);
-            threadPool* pool = CreateThreadPool(10, sem);
+
+            threadPool* pool = CreateThreadPool(conf->THREAD_PER_WORKER, sem);
 
             DestroyThreadPool(pool);
         }
         else{
             // PARENTE PROCESS
             parentId = getpid();
-            createForks(nForks - 1);
+            createForks(nForks - 1, conf);
         }
     }
     return parentId;
 }
 
 int main(void){
-    // TODO Add config file parsing
     // TODO Add options to program
+
+    serverConf* conf = (serverConf*) malloc(sizeof(serverConf));
+    if( loadConfig("server.conf", conf) == -1) printf("Error loading config file.\n");
     
     // Init shared data
     data* sharedData = createSharedData(sv);
 
     // Init semaphores
 
-    pid_t parentId = createForks(3);
+    pid_t parentId = createForks(3, conf);
     
     if(getpid() == parentId){
         sleep(1);
@@ -56,7 +60,9 @@ int main(void){
         sem_post(sharedData->sem->queueMutex);
 
         close(sv[1]);
-        int socketFd = createServerSocket(8080);
+
+        printf("SOCKET PORT: %d\n", conf->PORT);
+        int socketFd = createServerSocket(conf->PORT);
 
         while(1){
             acceptConnection(socketFd, sharedData);
