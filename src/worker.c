@@ -53,6 +53,8 @@ void* workerThread(void* arg){
         cMsg.msg_control = cmsgbuff;
         cMsg.msg_controllen = sizeof(cmsgbuff);
 
+        pthread_mutex_lock(&pool->tMutex);
+
         ssize_t rc = recvmsg(sData->sv[1], &cMsg, 0);
 
         sem_post(sData->sem->emptySlots);
@@ -99,12 +101,17 @@ void* workerThread(void* arg){
             continue;
         }
 
-        sendHttpResponse(*clientFd, 200, "OK", "text/html", "<html><body><h1>Hello, World!</h1></body></html>", 
-            strlen("<html><body><h1>Hello, World!</h1></body></html>"));
+        httpResponse* response = (httpResponse*)malloc(sizeof(httpResponse));
+
+        sendHttpResponse(*clientFd, request, response);
+
+        free(response);
         serverLog("Sent data");
         
         if(close(*clientFd) == -1) perror("CLOSE");
         serverLog("Closed connection");
+
+        pthread_mutex_unlock(&pool->tMutex);
 
         // TODO Decrease active connection counter
     }
