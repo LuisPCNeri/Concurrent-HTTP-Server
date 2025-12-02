@@ -3,7 +3,7 @@ const BUTTON = document.getElementById("btn");
 var obj;
 
 function get_request(body_element){
-    fetch("http://localhost:8080")
+    fetch("http://localhost:8080/index.html")
     .then(response => response)
     .then(data => {
         console.log(data);

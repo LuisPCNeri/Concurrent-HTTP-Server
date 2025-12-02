@@ -98,18 +98,38 @@ void* workerThread(void* arg){
             printf("NOT good request\n");
             free(request);
             close(*clientFd);
+
+            sem_wait(sData->sem->statsMutex);
+            // Update stats
+            sData->stats.activeConnetions--;
+            sem_post(sData->sem->statsMutex);
+
             continue;
         }
 
         httpResponse* response = (httpResponse*)malloc(sizeof(httpResponse));
 
+        sem_wait(sData->sem->filledSlots);
+
         sendHttpResponse(*clientFd, request, response);
 
+        sem_post(sData->sem->emptySlots);
+        pthread_mutex_unlock(&pool->tMutex);
+
         free(response);
-        serverLog("Sent data");
-        
+        free(request);
+
+        pthread_mutex_unlock(&pool->tMutex);
+
         if(close(*clientFd) == -1) perror("CLOSE");
         serverLog("Closed connection");
+
+        sem_wait(sData->sem->statsMutex);
+        // Update stats
+        sData->stats.activeConnetions--;
+        sem_post(sData->sem->statsMutex);
+
+        serverLog("Sent data");
 
         pthread_mutex_unlock(&pool->tMutex);
 

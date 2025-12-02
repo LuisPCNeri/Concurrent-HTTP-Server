@@ -33,35 +33,44 @@ int parseHttpRequest(const char* buffer, httpRequest* request){
         return -1;
     }
     
-    if( strcmp(request->path, "/") == 0 ) strcpy(request->path, "/index.html");
+    printf("PATH BEFORE CHANGE %s\n", request->path);
+    if( strcmp(request->path, "/") == 0 && strlen(request->path) < 2 ) strcpy(request->path, "/index.html");
 
     return 0;
 }
 
-static char* getFileBody(const char* fileName, httpResponse* response){
+static int getFileBody(const char* fileName, httpResponse* response){
     FILE* fptr;
-    char buffer[4096];
-    char line[256];
+    char buffer[4096] = "";
+    char line[256] = "";
 
-    if( !(fptr = fopen(fileName, "r")) ) perror("OPEN FILE");
+    if( !(fptr = fopen(fileName, "r")) ) {
+        perror("OPEN FILE");
 
-    int c, i = 0;
-    while( fgets(line, sizeof(line), fptr) ){
-        strncat(buffer, line, sizeof(line));
+        return -1;
     }
 
-    strncpy(response->responseBody, buffer, sizeof(buffer));
-    response->bodyLen = sizeof(buffer);
+    while( fgets(line, sizeof(line), fptr) )
+        strcat(buffer, line);
 
-    return buffer;
+    size_t len = strlen(buffer);
+    memcpy(response->responseBody, buffer, len);
+
+    response->bodyLen = len;
+
+    return 0;
 }
 
 static int getFileHeader(char* fileName, httpResponse* response, httpRequest* request){
     FILE* fptr;
-    char fHeader[512];
+    char* root = (char *)malloc(sizeof(char)*512);
+    strcpy(root, conf->DOC_ROOT);
 
-    strcpy(request->path, strcat(conf->DOC_ROOT, request->path));
-    printf("PATH %s\n", request->path);
+    printf("PATH %s\n\n", request->path);
+    strcpy(request->path, strcat(root, request->path));
+    printf("PATH %s\n\n", request->path);
+
+    free(root);
 
     if( !(fptr = fopen(request->path, "rb"))){
         perror("Open File: ");
@@ -79,13 +88,6 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
 
     // TODO CHECK FOR 503 ERROR
 
-    unsigned int fSize;
-
-    // Get file size and return to start of file
-    fseek(fptr, 0, SEEK_END);
-    fSize = ftell(fptr);
-    fseek(fptr, 0, SEEK_SET);
-
     char* ext;
 
     const char* dot = strrchr(fileName, '.');
@@ -94,9 +96,12 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
     ext = (char*) malloc( sizeof( *(dot + 1)));
     strcpy(ext, dot + 1);
 
-    if( strcmp(ext, "html") == 0 )      strcpy(response->contentType, "text/html");
-    else if ( strcmp(ext, "js") == 0 )  strcpy(response->contentType, "text/js");
-    else if ( strcmp(ext, "css") == 0 ) strcpy(response->contentType, "text/css");
+    if( strcmp(ext, "html")      == 0 )  strcpy(response->contentType, "text/html");
+    else if ( strcmp(ext, "js")  == 0 )  strcpy(response->contentType, "application/javascript");
+    else if ( strcmp(ext, "css") == 0 )  strcpy(response->contentType, "text/css");
+    else if ( strcmp(ext, "png") == 0 )  strcpy(response->contentType, "image/png");
+    else if ( strcmp(ext, "jpg") == 0 )  strcpy(response->contentType, "image/jpeg");
+    else if ( strcmp(ext, "pdf") == 0 )  strcpy(response->contentType, "application/pdf");
 
     response->status = 200;
     strcpy(response->statusMessage, "OK");
@@ -124,6 +129,6 @@ void sendHttpResponse(int clientFd, httpRequest* request, httpResponse* response
     response->status, response->statusMessage, response->contentType, response->bodyLen);
 
     if(send(clientFd, header, header_len, 0) == -1) perror("SEND");
-    if(response->responseBody && response->bodyLen > 0 && strcmp(request->method, "HEAD") != 0) 
+    if(response->bodyLen > 0 && strcmp(request->method, "HEAD") != 0) 
         send(clientFd, response->responseBody, response->bodyLen, 0);
 }
