@@ -88,6 +88,11 @@ void* workerThread(void* arg){
             continue;
         }
         printf("BYTES READ %d\n", (int) bytesRead);
+
+        sem_wait(sData->sem->statsMutex);
+        sData->stats.totalRequests++;
+        sem_post(sData->sem->statsMutex);
+
         if(bytesRead > 0){
             buffer[bytesRead] = '\0';
             //printf("Received: %s\n", buffer);
