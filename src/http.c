@@ -58,6 +58,8 @@ static int getFileBody(const char* fileName, httpResponse* response){
 
     response->bodyLen = len;
 
+    //printf("SENT %s\n\n", response->responseBody);
+
     return 0;
 }
 
@@ -66,9 +68,9 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
     char* root = (char *)malloc(sizeof(char)*512);
     strcpy(root, conf->DOC_ROOT);
 
-    printf("PATH %s\n\n", request->path);
+    //printf("PATH %s\n\n", request->path);
     strcpy(request->path, strcat(root, request->path));
-    printf("PATH %s\n\n", request->path);
+    //printf("PATH %s\n\n", request->path);
 
     free(root);
 
