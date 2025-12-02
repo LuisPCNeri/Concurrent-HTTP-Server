@@ -55,6 +55,7 @@ int main(void){
     
     if(getpid() == parentId){
         sleep(1);
+        startStatsShow(sharedData);
 
         sem_post(sharedData->sem->emptySlots);
         sem_post(sharedData->sem->queueMutex);

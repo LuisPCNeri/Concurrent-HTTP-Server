@@ -4,12 +4,33 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #include "semaphores.h"
 #include "http.h"
 #include "shared_data.h"
 #include "master.h"
 #include "logger.h"
+
+
+char* statsFormat = 
+    "\n\n\nACTIVE CONNECTIONS: %d\r\n"
+    "TOTAL BYTES TRANSFERRED: %d\r\n"
+    "STATUS 200 COUNT: %d\r\n"
+    "STATUS 404 COUNT: %d\r\n"
+    "STATUS 500 COUNT: %d\r\n"
+    "TOTAL REQUESTS COUNT: %d\n\n\n";
+
+static void showStats(void* arg){
+    data* sData = (data*) arg;
+
+    while(1){
+        sleep(5);
+
+        printf(statsFormat, sData->stats.activeConnetions, sData->stats.bytesTransferred, sData->stats.status200, 
+            sData->stats.status404, sData->stats.status500, sData->stats.totalRequests);
+    }
+}
 
 int createServerSocket(int port){
     // Created socket using IPv4 sockets (AF_INET) as TCP packets (SOCK_STREAM) without specifying a protocol
@@ -100,11 +121,17 @@ int acceptConnection(int socketFd, data* sharedData){
     sem_wait(sharedData->sem->statsMutex);
     // Update active conncetion count
     sharedData->stats.activeConnetions++;
-    printf("STATS NOW : %d\n", sharedData->stats.activeConnetions);
-
     sem_post(sharedData->sem->statsMutex);
 
     // Added connection in clientFd socket to the connection queue in shared data
 
     return 0;
-}   
+}
+
+int startStatsShow(data* sharedData){
+    // Create new thread
+    pthread_t* statsThread = (pthread_t*) malloc(sizeof(pthread_t));
+    pthread_create(statsThread, NULL, (void*) showStats, sharedData);
+
+    return 0;
+}

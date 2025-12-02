@@ -8,16 +8,22 @@
 
 #include "http.h"
 #include "config.h"
+#include "shared_data.h"
 
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
 serverConf* conf = NULL;
+data* sData = NULL;
 
 int parseHttpRequest(const char* buffer, httpRequest* request){
     if(!conf){
         conf = (serverConf*)malloc(sizeof(serverConf));
         loadConfig("server.conf", conf);
+    }
+
+    if(!sData){
+        sData = getSharedData("/web_server_shm");
     }
 
     char* line_end = strstr(buffer, "\r\n");
@@ -33,7 +39,7 @@ int parseHttpRequest(const char* buffer, httpRequest* request){
         return -1;
     }
     
-    printf("PATH BEFORE CHANGE %s\n", request->path);
+    //printf("PATH BEFORE CHANGE %s\n", request->path);
     if( strcmp(request->path, "/") == 0 && strlen(request->path) < 2 ) strcpy(request->path, "/index.html");
 
     return 0;
@@ -76,6 +82,12 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
 
     if( !(fptr = fopen(request->path, "rb"))){
         perror("Open File: ");
+
+        // Update 404 stats
+        sem_wait(sData->sem->statsMutex);
+        sData->stats.status404++;
+        sem_post(sData->sem->statsMutex);
+
         printf("SERVING 404 ERROR...\n");
         
         response->status = 404;
@@ -108,6 +120,11 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
     response->status = 200;
     strcpy(response->statusMessage, "OK");
 
+    // Update 200 stats
+    sem_wait(sData->sem->statsMutex);
+    sData->stats.status200++;
+    sem_post(sData->sem->statsMutex);
+
     fclose(fptr);
 
     return 0;
@@ -130,7 +147,16 @@ void sendHttpResponse(int clientFd, httpRequest* request, httpResponse* response
         "\r\n",
     response->status, response->statusMessage, response->contentType, response->bodyLen);
 
-    if(send(clientFd, header, header_len, 0) == -1) perror("SEND");
+    ssize_t totalByteSent = 0;
+    ssize_t bytes = 0;
+
+    if(( bytes = send(clientFd, header, header_len, 0) ) == -1) perror("SEND");
+    totalByteSent += bytes;
     if(response->bodyLen > 0 && strcmp(request->method, "HEAD") != 0) 
-        send(clientFd, response->responseBody, response->bodyLen, 0);
+        totalByteSent += send(clientFd, response->responseBody, response->bodyLen, 0);
+
+    // Update total bytes sent stat
+    sem_wait(sData->sem->statsMutex);
+    sData->stats.bytesTransferred += totalByteSent;
+    sem_post(sData->sem->statsMutex);
 }
