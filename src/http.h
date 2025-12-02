@@ -6,10 +6,20 @@ typedef struct{
     char path[512];
     char version[16];
 } httpRequest;
-// Creates and returns the file descpritor for the socket where the server lives PORT by default is 8080
-void sendFile(int clientFd, const char* path);
 
-void sendHttpResponse(int clientFd, int status, const char* statusMsg, const char* cType, const char* body, size_t bodyLen);
+typedef struct{
+    int status;
+    char statusMessage[256];
+    char contentType[256];
+    char responseBody[4096];
+    size_t bodyLen;
+} httpResponse;
+
+// Creates the servers response to then send separatly to user
+// Returns a pointer to an http response or a null pointer if it fails
+httpResponse* createHttpResponse(httpRequest* request);
+
+void sendHttpResponse(int clientFd, httpRequest* req, httpResponse* rep);
 
 int parseHttpRequest(const char* buffer, httpRequest* request);
 

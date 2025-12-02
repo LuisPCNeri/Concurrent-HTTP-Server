@@ -7,62 +7,19 @@
 #include <http.h>
 
 #include "http.h"
+#include "config.h"
 
 #define PORT 8080
 #define BUFFER_SIZE 4096
 
-const char* response =
-    "HTTP/1.1 200 OK\r\n"
-    "Access-Control-Allow-Origin: *\r\n"
-    "Content-Type: text/html\r\n"
-    "\r\n"
-    "<html><body><h1>Hello, World! HEHEHEHA</h1></body></html>";
-
-// Sends file in cosnt char* path to int client_fd
-void sendFile(int client_fd, const char* path){
-    FILE* file = fopen(path, "rb");
-
-    if(!file){
-        // Send 404 Error to user
-        const char* response =
-            "HTTP/1.1 404 Not Found\r\n"
-            "Content-Type: text/html\r\n"
-            "\r\n"
-            "<h1>404 Not Found</h1>";
-        send(client_fd, response, strlen(response), 0);
-        return;
-    }
-
-    // Get file size
-    // Goes to the END of the file
-    fseek(file, 0, SEEK_END);
-    // Returns the position of given stream in this case the END of file
-    long file_size = ftell(file);
-    // Puts the stream back at START of file
-    fseek(file, 0, SEEK_SET);
-
-    // Sends ONLY the file header
-
-    char file_header[512];
-    snprintf(file_header, sizeof(file_header), 
-        "HTTP/1.1 200 OK\r\n"
-        "Content-Type: text/html\r\n"
-        "Content-Length: %ld\r\n"
-        "\r\n", file_size);
-    send(client_fd, file_header, strlen(file_header), 0);
-
-    char buffer[BUFFER_SIZE];
-    size_t bytes;
-
-    while( (bytes = fread(buffer, 1, sizeof(buffer), file)) > 0 ){
-        // While any non zero number of bytes are being read
-        send(client_fd, buffer, bytes, 0);
-    }
-
-    fclose(file);
-}
+serverConf* conf = NULL;
 
 int parseHttpRequest(const char* buffer, httpRequest* request){
+    if(!conf){
+        conf = (serverConf*)malloc(sizeof(serverConf));
+        loadConfig("server.conf", conf);
+    }
+
     char* line_end = strstr(buffer, "\r\n");
     if (!line_end) return -1;
 
@@ -75,15 +32,92 @@ int parseHttpRequest(const char* buffer, httpRequest* request){
     if (sscanf(first_line, "%s %s %s", request->method, request->path, request->version)!= 3) {
         return -1;
     }
+    
+    printf("PATH BEFORE CHANGE %s\n", request->path);
+    if( strcmp(request->path, "/") == 0 && strlen(request->path) < 2 ) strcpy(request->path, "/index.html");
 
     return 0;
 }
 
-// TODO Make createHttpResponse function and httpResponse type with status, statusMessage, cType, body, bodyLen attributes
+static int getFileBody(const char* fileName, httpResponse* response){
+    FILE* fptr;
+    char buffer[4096] = "";
+    char line[256] = "";
 
-void sendHttpResponse(int clientFd, int status, const char* statusMsg, const char* cType, const char* body, size_t bodyLen){
+    if( !(fptr = fopen(fileName, "r")) ) {
+        perror("OPEN FILE");
+
+        return -1;
+    }
+
+    while( fgets(line, sizeof(line), fptr) )
+        strcat(buffer, line);
+
+    size_t len = strlen(buffer);
+    memcpy(response->responseBody, buffer, len);
+
+    response->bodyLen = len;
+
+    //printf("SENT %s\n\n", response->responseBody);
+
+    return 0;
+}
+
+static int getFileHeader(char* fileName, httpResponse* response, httpRequest* request){
+    FILE* fptr;
+    char* root = (char *)malloc(sizeof(char)*512);
+    strcpy(root, conf->DOC_ROOT);
+
+    //printf("PATH %s\n\n", request->path);
+    strcpy(request->path, strcat(root, request->path));
+    //printf("PATH %s\n\n", request->path);
+
+    free(root);
+
+    if( !(fptr = fopen(request->path, "rb"))){
+        perror("Open File: ");
+        printf("SERVING 404 ERROR...\n");
+        
+        response->status = 404;
+        strcpy(response->statusMessage, "FILE NOT FOUND");
+        strcpy(response->contentType, "text/html");
+        
+        
+        strcpy(request->path, "www/404.html");
+
+        return 0;
+    }
+
+    // TODO CHECK FOR 503 ERROR
+
+    char* ext;
+
+    const char* dot = strrchr(fileName, '.');
+    if(!dot || dot == fileName) printf("NOT good file extension.\n");
+
+    ext = (char*) malloc( sizeof( *(dot + 1)));
+    strcpy(ext, dot + 1);
+
+    if( strcmp(ext, "html")      == 0 )  strcpy(response->contentType, "text/html");
+    else if ( strcmp(ext, "js")  == 0 )  strcpy(response->contentType, "application/javascript");
+    else if ( strcmp(ext, "css") == 0 )  strcpy(response->contentType, "text/css");
+    else if ( strcmp(ext, "png") == 0 )  strcpy(response->contentType, "image/png");
+    else if ( strcmp(ext, "jpg") == 0 )  strcpy(response->contentType, "image/jpeg");
+    else if ( strcmp(ext, "pdf") == 0 )  strcpy(response->contentType, "application/pdf");
+
+    response->status = 200;
+    strcpy(response->statusMessage, "OK");
+
+    fclose(fptr);
+
+    return 0;
+}
+
+void sendHttpResponse(int clientFd, httpRequest* request, httpResponse* response){
     char header[2048];
 
+    getFileHeader(request->path, response, request);
+    getFileBody(request->path, response);
     //TODO Add response stats to shared memory stats
 
     int header_len = snprintf(header, sizeof(header),
@@ -94,10 +128,9 @@ void sendHttpResponse(int clientFd, int status, const char* statusMsg, const cha
         "Server: ConcurrentHTTP/1.0\r\n"
         "Connection: close\r\n"
         "\r\n",
-    status, statusMsg, cType, bodyLen);
+    response->status, response->statusMessage, response->contentType, response->bodyLen);
 
     if(send(clientFd, header, header_len, 0) == -1) perror("SEND");
-    if(body && bodyLen > 0) send(clientFd, body, bodyLen, 0);
-
-    printf("SENT %s\n", body);
+    if(response->bodyLen > 0 && strcmp(request->method, "HEAD") != 0) 
+        send(clientFd, response->responseBody, response->bodyLen, 0);
 }

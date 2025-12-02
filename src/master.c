@@ -54,8 +54,6 @@ int acceptConnection(int socketFd, data* sharedData){
     // TODO there should be a check to see if queue is full before accepting
     // If queue is full send 503 Server Failure response
 
-    printf("WAINTING ON ACCEPT ================================\n");
-
     int clientFd;
     // TODO Log Connection accepted
     if( (clientFd = accept(socketFd, NULL, NULL)) == -1 ){

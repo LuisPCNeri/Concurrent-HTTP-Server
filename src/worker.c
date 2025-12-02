@@ -53,6 +53,8 @@ void* workerThread(void* arg){
         cMsg.msg_control = cmsgbuff;
         cMsg.msg_controllen = sizeof(cmsgbuff);
 
+        pthread_mutex_lock(&pool->tMutex);
+
         ssize_t rc = recvmsg(sData->sv[1], &cMsg, 0);
 
         sem_post(sData->sem->emptySlots);
@@ -96,15 +98,40 @@ void* workerThread(void* arg){
             printf("NOT good request\n");
             free(request);
             close(*clientFd);
+
+            sem_wait(sData->sem->statsMutex);
+            // Update stats
+            sData->stats.activeConnetions--;
+            sem_post(sData->sem->statsMutex);
+
             continue;
         }
 
-        sendHttpResponse(*clientFd, 200, "OK", "text/html", "<html><body><h1>Hello, World!</h1></body></html>", 
-            strlen("<html><body><h1>Hello, World!</h1></body></html>"));
-        serverLog("Sent data");
-        
+        httpResponse* response = (httpResponse*)malloc(sizeof(httpResponse));
+
+        sem_wait(sData->sem->filledSlots);
+
+        sendHttpResponse(*clientFd, request, response);
+
+        sem_post(sData->sem->emptySlots);
+        pthread_mutex_unlock(&pool->tMutex);
+
+        free(response);
+        free(request);
+
+        pthread_mutex_unlock(&pool->tMutex);
+
         if(close(*clientFd) == -1) perror("CLOSE");
         serverLog("Closed connection");
+
+        sem_wait(sData->sem->statsMutex);
+        // Update stats
+        sData->stats.activeConnetions--;
+        sem_post(sData->sem->statsMutex);
+
+        serverLog("Sent data");
+
+        pthread_mutex_unlock(&pool->tMutex);
 
         // TODO Decrease active connection counter
     }
