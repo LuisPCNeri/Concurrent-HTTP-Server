@@ -29,6 +29,9 @@ static void showStats(void* arg){
 
         printf(statsFormat, sData->stats.activeConnetions, sData->stats.bytesTransferred, sData->stats.status200, 
             sData->stats.status404, sData->stats.status500, sData->stats.totalRequests);
+
+        // Write server stats to a file to be accessed by web interface
+        updateStatFile(sData);
     }
 }
 
@@ -128,10 +131,10 @@ int acceptConnection(int socketFd, data* sharedData){
     return 0;
 }
 
-int startStatsShow(data* sharedData){
+int startStatsShow(data* sharedData, master* m){
     // Create new thread
-    pthread_t* statsThread = (pthread_t*) malloc(sizeof(pthread_t));
-    pthread_create(statsThread, NULL, (void*) showStats, sharedData);
+    m->statsThread = (pthread_t*) malloc(sizeof(pthread_t));
+    pthread_create(m->statsThread, NULL, (void*) showStats, sharedData);
 
     return 0;
 }

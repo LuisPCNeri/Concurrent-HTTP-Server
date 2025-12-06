@@ -7,8 +7,35 @@
 #include "semaphores.h"
 #include "shared_data.h"
 
+void updateStatFile(data* sData){
+    FILE* file;
+
+    if(! (file = fopen("www/statFile.txt", "w"))) perror("FOPEN");
+    // put indicator in the beggining of file
+    rewind(file);
+    fprintf(file, "%d,%ld,%ld,%ld,%ld,%ld", sData->stats.activeConnetions, sData->stats.bytesTransferred, sData->stats.status200,
+        sData->stats.status404, sData->stats.status500, sData->stats.totalRequests);
+    fflush(file);
+
+    fclose(file);
+}
+
+int getLogSize(){
+    FILE* file;
+
+    if( !(file = fopen("access.log", "r"))) perror("FOPEN");
+
+    fseek(file, 0, SEEK_END);
+    long size = ftell(file);
+    rewind(file);
+
+    fclose(file);
+
+    return size;
+}
+
 void serverLog(char* text){
-    FILE *fptr;
+    FILE* fptr;
     time_t now;
 
     struct tm* tInfo;
@@ -20,6 +47,10 @@ void serverLog(char* text){
 
     // Wait for sempahore
     sem_wait(sData->sem->logMutex);
+
+    long log_size = getLogSize();
+
+    if (log_size > 10 * 1024 * 1024) rename("access.log", "access.log.1");
 
     // Critical region
 

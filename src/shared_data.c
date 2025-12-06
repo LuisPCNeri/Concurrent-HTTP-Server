@@ -7,7 +7,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
-data* createSharedData(int* sv){
+data* createSharedData(){
     // Create shared memory for read or write
     int shm_fd = shm_open("/web_server_shm", O_CREAT | O_RDWR, 0666);
     if(shm_fd == -1) return NULL; // Failed to create shm
@@ -67,6 +67,8 @@ data* getSharedData(char* name){
 }
 
 void destroySharedData(data* sData){
+    destroySemaphores(sData->sem);
+    free(sData->sem);
     // UNMAP the sData variable
     munmap(sData, sizeof(data));
     // REMOVE shm link

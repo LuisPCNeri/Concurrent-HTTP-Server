@@ -30,7 +30,7 @@ typedef struct{
 } data;
 
 // Creates a mapped region with data using sv[2] as a socket pair to communicate between processes
-data* createSharedData(int* sv);
+data* createSharedData();
 
 // Gets the data with NAME name
 data* getSharedData(char* name);

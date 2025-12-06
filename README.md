@@ -3,7 +3,7 @@
 ## Authors
 
 Luís Pedro Costa Néri Correia NMEC 125264<br>
-Guilherme Mendes Martins NMEC ??????
+Guilherme Mendes Martins NMEC 125260
 
 ## Description
 
@@ -29,3 +29,5 @@ Guilherme Mendes Martins NMEC ??????
     -https://linux.die.net/man/3/cmsg
     -https://www.ibm.com/docs/en/zos/2.5.0?topic=functions-sendmsg-send-messages-socket
     -https://stackoverflow.com/questions/8359322/how-to-share-semaphores-between-processes-using-shared-memory
+    -https://mimesniff.spec.whatwg.org/#javascript-mime-type
+    -https://www.reddit.com/r/learnjavascript/comments/r4ss8t/how_to_parse_data_from_txt_file_using_javascript/

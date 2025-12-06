@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <signal.h>
 
 #include "shared_data.h"
 #include "threadPool.h"
@@ -15,7 +16,14 @@
 #include "semaphores.h"
 #include "logger.h"
 
+unsigned int keepRunning = 1;
+
+void INTHandler(int){
+    keepRunning = 0;
+}
+
 void* workerThread(void* arg){
+    signal(SIGINT, INTHandler);
     // Convert argument passed on thread create in threadPool.c to 
     threadPool* pool = (threadPool*) arg;
     semaphore* sems = pool->sems;
@@ -23,7 +31,7 @@ void* workerThread(void* arg){
     data* sData = getSharedData("/web_server_shm");
 
     // Main logic loop
-    while(1){
+    while(keepRunning){
         // Lock the mutex
         pthread_mutex_lock(&pool->tMutex);
 
@@ -83,7 +91,6 @@ void* workerThread(void* arg){
         serverLog("Received request");
         if(bytesRead == -1){
             perror("RECEIVED");
-            exit(-1);
             sem_post(sems->queueMutex);
             continue;
         }
@@ -119,7 +126,6 @@ void* workerThread(void* arg){
         sendHttpResponse(*clientFd, request, response);
 
         sem_post(sData->sem->emptySlots);
-        pthread_mutex_unlock(&pool->tMutex);
 
         free(response);
         free(request);

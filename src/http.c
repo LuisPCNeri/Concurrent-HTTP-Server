@@ -71,14 +71,12 @@ static int getFileBody(const char* fileName, httpResponse* response){
 
 static int getFileHeader(char* fileName, httpResponse* response, httpRequest* request){
     FILE* fptr;
-    char* root = (char *)malloc(sizeof(char)*512);
+    char root[512] = "";
     strcpy(root, conf->DOC_ROOT);
 
     //printf("PATH %s\n\n", request->path);
     strcpy(request->path, strcat(root, request->path));
     //printf("PATH %s\n\n", request->path);
-
-    free(root);
 
     if( !(fptr = fopen(request->path, "rb"))){
         perror("Open File: ");
@@ -104,13 +102,12 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
 
     char* ext;
 
-    const char* dot = strrchr(fileName, '.');
+    char* dot = strrchr(fileName, '.');
     if(!dot || dot == fileName) printf("NOT good file extension.\n");
 
-    ext = (char*) malloc( sizeof( *(dot + 1)));
-    strcpy(ext, dot + 1);
+    ext = (dot + 1);
 
-    if( strcmp(ext, "html")      == 0 )  strcpy(response->contentType, "text/html");
+    if(       strcmp(ext, "html")== 0 )  strcpy(response->contentType, "text/html");
     else if ( strcmp(ext, "js")  == 0 )  strcpy(response->contentType, "application/javascript");
     else if ( strcmp(ext, "css") == 0 )  strcpy(response->contentType, "text/css");
     else if ( strcmp(ext, "png") == 0 )  strcpy(response->contentType, "image/png");
