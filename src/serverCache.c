@@ -5,29 +5,29 @@
 #include "serverCache.h"
 
 // Using the known hashing algorithm djb2 as found in http://www.cse.yorku.ca/~oz/hash.html
-static unsigned long hash_djb2(unsigned char* str){
+static unsigned long hash_djb2(const char* str){
     unsigned long hash = 5381;
     int c;
 
-    while(c = *str++)
+    while( (c = *str++) )
         hash = ((hash << 5 ) + hash) + c;   // hash * 33 + c
 
     return hash;
 }
 
-static int getBucket(cache* c, char* str){
+static int getBucket(cache* c, const char* str){
     return hash_djb2(str) % c->mSize;
 }
 
-static cacheNode* createEntry(char* key, char* data){
+static cacheNode* createEntry(const char* key, const char* data){
     cacheNode* entry = (cacheNode*) malloc(sizeof(cacheNode));
     entry->path = (char*) malloc(sizeof(key));
-    if(!entry->path) return -1;
+    if(!entry->path) return NULL;
 
     strcpy(entry->path, key);
 
     entry->content = (char*) malloc(sizeof(data));
-    if(!entry->content) return -1;
+    if(!entry->content) return NULL;
     
     strcpy(entry->content, data);
 
@@ -59,6 +59,10 @@ int cacheInsert(cache* c, const char* key, const char* data){
 
     // Create a new node
     cacheNode* node = createEntry(key, data);
+
+    // TODO Checking of current cache size and comparing to 10MB
+
+    c->cSize += sizeof(node);
 
     // If node creation failed
     if( node == NULL ) return -1;
@@ -124,7 +128,7 @@ int cacheRemove(cache* c, const char* key){
 
 void destroyCache(cache* c){
     // Free all items from all buckets
-    for(int i = 0; i < c->cSize; i++){
+    for(int i = 0; i < c->mSize; i++){
         cacheNode* n = c->buckets[i];
 
         // If node is not null

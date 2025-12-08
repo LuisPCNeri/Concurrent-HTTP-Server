@@ -3,13 +3,13 @@
 
 #include <stdlib.h>
 
-typedef struct{
+typedef struct cacheNode{
     char* path;             // KEY
     char* content;          // DATA
     size_t size;
 
-    cacheNode* prev;        // Next and previous nodes to make each bucket contain a doubly linked list
-    cacheNode* next;
+    struct cacheNode* prev;        // Previous node to make each bucket contain a doubly linked list
+    struct cacheNode* next;        // Next node to make each bucket contain a doubly linked list
 
 } cacheNode;
 
@@ -17,7 +17,7 @@ typedef struct{
 
     cacheNode** buckets;
 
-    size_t mSize;
+    int mSize;
     size_t cSize;
 
 } cache;
