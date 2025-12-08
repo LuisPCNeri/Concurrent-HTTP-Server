@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "serverChache.h"
+#include "serverCache.h"
 
 // Using the known hashing algorithm djb2 as found in http://www.cse.yorku.ca/~oz/hash.html
 static unsigned long hash_djb2(unsigned char* str){
