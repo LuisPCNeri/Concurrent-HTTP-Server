@@ -14,6 +14,11 @@
 #include "http.h"
 #include "config.h"
 
+// COLORS :)
+#define GREEN "\033[32m"
+#define RESET "\033[0m"
+#define RED "\033[31m"
+
 semaphore* sem;
 serverConf* config;
 master* m;
@@ -30,7 +35,7 @@ static pid_t createForks(int nForks, serverConf* conf){
         if( (pid = fork()) < 0) perror("Error creating separate processes :(");
         else if(pid == 0){
             // CHILD PROCESS
-            printf("Created child process %d\n", getpid());
+            printf(GREEN "Created child process %d"RESET"\n", getpid());
             close(sData->sv[0]);
 
             // Initialize config and shared data pointer for this child process
@@ -42,6 +47,9 @@ static pid_t createForks(int nForks, serverConf* conf){
             threadPool* pool = CreateThreadPool(conf->THREAD_PER_WORKER, sem);
 
             DestroyThreadPool(pool);
+
+            // Process as ended so exit gracefully :)
+            exit(EXIT_SUCCESS);
         }
         else{
             // PARENTE PROCESS
@@ -54,6 +62,8 @@ static pid_t createForks(int nForks, serverConf* conf){
 
 int main(void){
     signal(SIGINT, INThandler);
+    // IGNORES sigpipe signal so that if client closes connection WHILST data is being sent the server does not just die
+    
     // TODO Add options to program
 
     config = (serverConf*) malloc(sizeof(serverConf));

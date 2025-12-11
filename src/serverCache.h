@@ -8,9 +8,14 @@ typedef struct cacheNode{
     char* header;
     char* content;          // DATA
     size_t size;
+    int status;             // Makes it easier to check what status was sent when using a cached file
+                            // The status stored is the one given in the first response to this file as a response giving index.html would ALWAYS be a status 200 and so on
 
     struct cacheNode* prev;        // Previous node to make each bucket contain a doubly linked list
     struct cacheNode* next;        // Next node to make each bucket contain a doubly linked list
+
+    struct cacheNode* LRUprev;     // Pointer to previous node in the global LRU doubly linked list
+    struct cacheNode* LRUnext;
 
 } cacheNode;
 
@@ -20,15 +25,20 @@ typedef struct{
 
     int mSize;
     size_t cSize;
+    cacheNode* LRUhead;
+    cacheNode* LRUtail;
 
 } cache;
 
+typedef struct{
+    
+} cacheList;
 // Creates a cache object
 cache* createCache(cache* cache);
 
 // Inserts value onto CACHE cache associated to KEY key
 // Returns 0 on success and -1 on failure;
-int cacheInsert(cache* cache, const char* key, const char* head, const char* body);
+int cacheInsert(cache* cache, const char* key, const char* head, const char* body, size_t body_len, int status);
 
 // Looks for a given key in the CACHE cache hash table
 // If a value is found return a pointer to it, if not return NULL
