@@ -7,12 +7,69 @@
     <title>Document</title>
 </head>
 <body>
-    
-    <button id="btn" > AAA </button>
-    
 
-    <p id="text"></p>
+    <div class="centered">
+        <button id="btn">Click me</button>
 
+        <hr>
+
+        <p id="stats"></p>
+        <script>
+            const BUTTON = document.getElementById("btn");
+            const statsElement = document.getElementById("stats");
+
+            function refreshStats() {
+                // 1. Corrected fetch syntax
+                fetch('statFile.txt')
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+                        return response.text();
+                    })
+                    .then(data => {
+                        const dataArray = data.split(",");
+                        // 2. Map strings to numbers for validation and display
+                        const numericData = dataArray.map(element => parseFloat(element.trim()));
+
+                        // Validate if ALL elements are valid finite numbers
+                        const dataIsValid = numericData.every(element => {
+                            return typeof element === 'number' && isFinite(element);
+                        });
+
+                        if (numericData.length === 6) {
+                            // Data is valid and has the expected number of elements
+                            statsElement.innerText = 
+                                "Active connections: " + numericData[0] + "\n" +
+                                "Total bytes transferred: " + numericData[1] + " B\n" +
+                                "Status 200 count: " + numericData[2] + "\n" +
+                                "Status 404 count: " + numericData[3] + "\n" +
+                                "Status 500 count: " + numericData[4] + "\n" +
+                                "Total requests count: " + numericData[5];
+                        } else {
+                            // Handle invalid/incomplete data without an infinite loop
+                            statsElement.innerText = "Error: Stats file contains invalid or incomplete data.";
+                        }
+                    })
+                    .catch(err => {
+                        // Catches network errors, HTTP errors (from the throw above), and parsing errors
+                        statsElement.innerText = "Error reading stats: " + err.message;
+                    });
+            }
+
+            // Refresh stats when button is clicked
+            if (BUTTON) {
+                BUTTON.addEventListener('click', refreshStats);
+            } else {
+                console.error("Button element with ID 'btn' not found.");
+            }
+
+            // Optionally, refresh stats on page load
+            refreshStats();
+        </script>
+    </div>
+    
     <script src="script.js"></script>
+    
 </body>
 </html>
