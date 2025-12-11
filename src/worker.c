@@ -32,18 +32,11 @@ void* workerThread(void* arg){
 
     // Main logic loop
     while(keepRunning){
-        // Lock the mutex
-        pthread_mutex_lock(&pool->tMutex);
-
-        if(pool->shutdown){
-            printf("SHUTDOWN\n");
-            break;
+        if (sem_wait(sData->sem->filledSlots) != 0) {
+            // This can happen if the semaphore wait is interrupted by a signal.
+            // The loop condition will then handle shutdown.
+            continue;
         }
-
-        pthread_mutex_unlock(&pool->tMutex);
-
-        // TODO Implement use of semaphores for thread safety (or equivalent)
-        // Wait here for an empty
 
         int* clientFd;
 
@@ -61,15 +54,12 @@ void* workerThread(void* arg){
         cMsg.msg_control = cmsgbuff;
         cMsg.msg_controllen = sizeof(cmsgbuff);
 
-        pthread_mutex_lock(&pool->tMutex);
-
         ssize_t rc = recvmsg(sData->sv[1], &cMsg, 0);
-
-        sem_post(sData->sem->emptySlots);
 
         if(rc < 0){
             perror("recvmsg failed");
-            exit(-1);
+            sem_post(sData->sem->emptySlots);
+            continue;
         }
 
 
@@ -82,19 +72,17 @@ void* workerThread(void* arg){
             continue;
         }
 
-        //int clientFd = sockDequeue(&sData->queue);
         printf("Serving %d ON process %d\n", *clientFd, getpid());
 
         char buffer[4096];
         // Receive the http request
         ssize_t bytesRead = recv(*clientFd, buffer, sizeof(buffer) - 1, 0);
-        serverLog("Received request");
+        serverLog(sData, "Received request");
         if(bytesRead == -1){
             perror("RECEIVED");
             sem_post(sems->queueMutex);
             continue;
         }
-        printf("BYTES READ %d\n", (int) bytesRead);
 
         sem_wait(sData->sem->statsMutex);
         sData->stats.totalRequests++;
@@ -115,37 +103,59 @@ void* workerThread(void* arg){
             // Update stats
             sData->stats.activeConnetions--;
             sem_post(sData->sem->statsMutex);
-
+            
+            sem_post(sData->sem->emptySlots);
             continue;
         }
 
-        cacheNode* node = (cacheNode*) malloc(sizeof(cacheNode));
+        cacheNode* node = NULL; // Initialize to NULL
         ssize_t totalByteSent = 0;
         ssize_t bytes = 0;
-
-        /*if( ( node = cacheLookup(sData->cache, request->path)) != NULL ){
-            printf("TWAS IN CACHE\n");
+        
+        // Lock with a semaphore to not have multiple threads all reading from cache at the same time
+        sem_wait(sData->sem->cacheSem);
+        if( ( node = cacheLookup(sData->cache, request->path)) != NULL ){
+            sem_post(sData->sem->cacheSem);
 
             if(( bytes = send(*clientFd, node->header, strlen(node->header), 0) ) == -1) perror("SEND");
             totalByteSent += bytes;
 
-            if(strlen(node->content) > 0 && strcmp(request->method, "HEAD") != 0) 
-            totalByteSent += send(*clientFd, node->content, strlen(node->content), 0);
-        }else{*/
-            httpResponse* response = (httpResponse*)malloc(sizeof(httpResponse));
-            sem_wait(sData->sem->filledSlots);
-            sendHttpResponse(*clientFd, request, response);
-            sem_post(sData->sem->emptySlots);
-            free(response);
-        //}
+            if(node->size > 0 && strcmp(request->method, "HEAD") != 0) 
+                totalByteSent += send(*clientFd, node->content, node->size, 0);
 
-        free(node);
+            sem_wait(sData->sem->statsMutex);
+
+            switch (node->status)
+            {
+            case 200:
+                sData->stats.status200++;
+                break;
+            case 404:
+                sData->stats.status404++;
+                break;
+            case 500:
+                sData->stats.status500++;
+                break;
+            default:
+                break;
+            }
+
+            sem_post(sData->sem->statsMutex);
+        }else{
+            // If file was not cached it'd be better the semaphore still gets posted
+            sem_post(sData->sem->cacheSem);
+
+            httpResponse* response = (httpResponse*)malloc(sizeof(httpResponse));
+            sendHttpResponse(*clientFd, request, response);
+            free(response);
+        }
+
         free(request);
 
-        pthread_mutex_unlock(&pool->tMutex);
+        sem_post(sData->sem->emptySlots);
 
         if(close(*clientFd) == -1) perror("CLOSE");
-        serverLog("Closed connection");
+        serverLog(sData, "Closed connection");
 
         sem_wait(sData->sem->statsMutex);
         // Update stats
@@ -154,11 +164,7 @@ void* workerThread(void* arg){
 
         sem_post(sData->sem->statsMutex);
 
-        serverLog("Sent data");
-
-        pthread_mutex_unlock(&pool->tMutex);
-
-        // TODO Decrease active connection counter
+        serverLog(sData, "Sent data");
     }
 
     printf("I EXITED????\n");

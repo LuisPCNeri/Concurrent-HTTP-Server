@@ -163,17 +163,18 @@ void sendHttpResponse(int clientFd, httpRequest* request, httpResponse* response
     if(response->bodyLen > 0 && strcmp(request->method, "HEAD") != 0) 
         totalByteSent += send(clientFd, response->responseBody, response->bodyLen, 0);
 
-        
+    // If file is not in the cache add it
+    sem_wait(sData->sem->cacheSem);
+    if( cacheLookup(sData->cache, request->path) == NULL ) {
+        cacheInsert(sData->cache, request->path, header, response->responseBody, response->bodyLen, response->status);
+        sem_post(sData->sem->cacheSem);
+    }
+
+    // Again to not have a deadlock this semaphore ALWAYS needs to be posted
+    sem_post(sData->sem->cacheSem);
+
     free(response->responseBody);
 
-    // If file is not in the cache add it
-    /*if( cacheLookup(sData->cache, request->path) == NULL ) {
-        printf("CREATING ENTRY...\n");
-        
-        sem_wait(sData->sem->cacheSem);
-        cacheInsert(sData->cache, request->path, header, response->responseBody);
-        sem_post(sData->sem->cacheSem);
-    }*/
     // Update total bytes sent stat
     sem_wait(sData->sem->statsMutex);
     sData->stats.bytesTransferred += totalByteSent;

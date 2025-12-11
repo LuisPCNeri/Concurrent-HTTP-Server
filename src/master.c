@@ -12,6 +12,10 @@
 #include "master.h"
 #include "logger.h"
 
+// COLORS :)
+#define GREEN "\033[32m"
+#define RESET "\033[0m"
+#define RED "\033[31m"
 
 char* statsFormat = 
     "\n\n\nACTIVE CONNECTIONS: %d\r\n"
@@ -83,7 +87,7 @@ int acceptConnection(int socketFd, data* sharedData){
     if( (clientFd = accept(socketFd, NULL, NULL)) == -1 ){
         printf("ERROR\n");
     }
-    serverLog("Accepted connection");
+    serverLog(sharedData, "Accepted connection");
 
     sem_wait(sharedData->sem->emptySlots);
     sem_wait(sharedData->sem->queueMutex);
@@ -119,7 +123,7 @@ int acceptConnection(int socketFd, data* sharedData){
     // CONNECTION ACCPETED
 
 
-    printf("Connection %d Accepted\n", clientFd);
+    printf(GREEN "Connection %d Accepted"RESET"\n", clientFd);
     // Block the semaphore for access to the stats struct
     sem_wait(sharedData->sem->statsMutex);
     // Update active conncetion count

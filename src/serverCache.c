@@ -3,6 +3,14 @@
 #include <string.h>
 
 #include "serverCache.h"
+#include "config.h"
+
+// COLORS :)
+#define GREEN "\033[32m"
+#define RESET "\033[0m"
+#define RED "\033[31m"
+
+serverConf* conf;
 
 // Using the known hashing algorithm djb2 as found in http://www.cse.yorku.ca/~oz/hash.html
 static unsigned long hash_djb2(const char* str){
@@ -19,11 +27,37 @@ static int getBucket(cache* c, const char* str){
     return hash_djb2(str) % c->mSize;
 }
 
-static cacheNode* createEntry(const char* key, const char* header, const char* data){
+static void LRUEvict(cache* c, cacheNode* node) {
+    if (node->LRUprev) node->LRUprev->LRUnext = node->LRUnext;
+    // If it was the HEAD
+    else c->LRUhead = node->LRUnext;
+
+    if (node->LRUnext) node->LRUnext->LRUprev = node->LRUprev;
+    // If it was the TAIL
+    else c->LRUtail = node->LRUprev;
+}
+
+// ADDS a node to the LRU basically making it the most recently used node
+static void LRUAdd(cache* c, cacheNode* node) {
+
+    // IF list is EMPTY
+    if (c->LRUtail == NULL) {
+        c->LRUtail = node;
+    } else {
+        // Makes it first node so nothing behind and the "OLD HEAD" would be in front
+        node->LRUnext = c->LRUhead;
+        node->LRUprev = NULL;
+
+        if (c->LRUhead) c->LRUhead->LRUprev = node;
+        c->LRUhead = node;
+    }
+}
+
+static cacheNode* createEntry(const char* key, const char* header, const char* data, size_t dataLen, int status){
     cacheNode* entry = (cacheNode*) malloc(sizeof(cacheNode));
 
     if (!key || !header || !data) {
-        printf("BAD STRING >:(\n");
+        printf(RED "BAD STRING >:(" RESET "\n");
         return NULL;
     }
 
@@ -33,8 +67,16 @@ static cacheNode* createEntry(const char* key, const char* header, const char* d
     entry->header = (char*) malloc(strlen(header) + 1);
     memcpy(entry->header, header, strlen(header) + 1);
 
-    entry->content = (char*) malloc(strlen(data) + 1);
-    memcpy(entry->content, data, strlen(data) + 1);
+    entry->content = (char*) malloc(dataLen);
+    memcpy(entry->content, data, dataLen);
+
+    // Change size to the given len and status to the status defined in http respons
+    entry->size = dataLen;
+    entry->status = status;
+
+    // Initialize ALL pointers
+    entry->prev = entry->next = NULL;
+    entry->LRUprev = entry->LRUnext = NULL;
 
     return entry;
 }
@@ -47,6 +89,10 @@ static void delCacheItem(cacheNode* node){
 }
 
 cache* createCache(cache* c){
+    if(!conf){
+        conf = (serverConf*) malloc(sizeof(serverConf));
+        loadConfig("server.conf", conf);
+    }
     // By default maxSizeMB oughta be 10
 
     // Max size for the hash set hard coded to 20
@@ -54,33 +100,38 @@ cache* createCache(cache* c){
     c->cSize = 0;
     c->buckets = calloc(c->mSize, sizeof(cacheNode*));
 
+    c->LRUhead = NULL;
+    c->LRUtail = NULL;
+
     return c;
 }
 
-int cacheInsert(cache* c, const char* key, const char* header ,const char* body){
+int cacheInsert(cache* c, const char* key, const char* header ,const char* body, size_t body_len, int status){
     // Get bucket where key should be stored
     int bucketIndex = getBucket(c, key);
 
+    // cache is BIGGER or equal to 10MB
+    while (c->cSize + body_len >= (size_t) conf->CACHE_SIZE_MB * 1024 * 1024 && c->LRUtail != NULL) {
+        printf(RED "Cache is full. Evicting least recently used item: %s" RESET "\n", c->LRUtail->path);
+        cacheRemove(c, c->LRUtail->path);
+    }
+
     // Create a new node
-    cacheNode* node = createEntry(key, header, body);
+    cacheNode* node = createEntry(key, header, body, body_len, status);
     // TODO Checking of current cache size and comparing to 10MB
 
-    
+    c->cSize += sizeof(cacheNode) + strlen(key) + strlen(header) + body_len + 2;
 
-    c->cSize += sizeof(cacheNode) + strlen(key) + strlen(header) + strlen(body) + 3;
-
-    // If node creation failed
     if( node == NULL ) return -1;
 
-    // Put new node in the front of the doubly linked list
     node->prev = NULL;
     node->next = c->buckets[bucketIndex];
 
     // If there already is an item in the linked list
     if( c->buckets[bucketIndex] != NULL ) c->buckets[bucketIndex]->prev = node;
-
-    // Set new linked list head to the new node created
     c->buckets[bucketIndex] = node;
+
+    LRUAdd(c, node);
 
     return 0;
 }
@@ -91,12 +142,12 @@ void* cacheLookup(cache* c, const char* key){
     // Get the first node in the bucket
     cacheNode* node = c->buckets[bIndex];
 
-    printf("LOOKING: %s\n", key); 
-
     while(node){
-        printf("NODE: %s\n", node->path);
         if(strcmp(key, node->path) == 0){
-            printf("FOUND IT\n");
+            // FOUND in cache so remove from it's position in LRU and add it to the head
+            LRUEvict(c, node);
+            LRUAdd(c, node);
+
             return node;
         }
         // If key did not match go to the next node
@@ -123,7 +174,11 @@ int cacheRemove(cache* c, const char* key){
             if(node->next)
                 node->next->prev = node->prev;
 
+            LRUEvict(c, node);
+            // Subtract node's TOTAL size from the doubly linked list
+            c->cSize -= (sizeof(cacheNode) + strlen(node->path) + strlen(node->header) + node->size + 2);
             delCacheItem(node);
+            return 0; // Item found and removed, we can exit.
         }
 
         node = node->next;
@@ -146,6 +201,8 @@ void destroyCache(cache* c){
         // If node is not null
         if(n) delCacheItem(n);
     }
+
+    if(conf) free(conf);
 
     free(c->buckets);
     free(c);

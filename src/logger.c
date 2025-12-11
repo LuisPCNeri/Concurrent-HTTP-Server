@@ -34,16 +34,13 @@ int getLogSize(){
     return size;
 }
 
-void serverLog(char* text){
+void serverLog(data* sData, char* text){
     FILE* fptr;
     time_t now;
 
     struct tm* tInfo;
     time(&now);
     tInfo = localtime(&now);
-
-    // Get semaphores in shared memory
-    data* sData = getSharedData("/web_server_shm");
 
     // Wait for sempahore
     sem_wait(sData->sem->logMutex);
