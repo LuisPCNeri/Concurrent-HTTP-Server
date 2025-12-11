@@ -5,6 +5,7 @@
 
 typedef struct cacheNode{
     char* path;             // KEY
+    char* header;
     char* content;          // DATA
     size_t size;
 
@@ -23,11 +24,11 @@ typedef struct{
 } cache;
 
 // Creates a cache object
-cache* createCache();
+cache* createCache(cache* cache);
 
 // Inserts value onto CACHE cache associated to KEY key
 // Returns 0 on success and -1 on failure;
-int cacheInsert(cache* cache, const char* key, const char* value);
+int cacheInsert(cache* cache, const char* key, const char* head, const char* body);
 
 // Looks for a given key in the CACHE cache hash table
 // If a value is found return a pointer to it, if not return NULL

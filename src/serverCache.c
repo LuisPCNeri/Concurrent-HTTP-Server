@@ -19,31 +19,35 @@ static int getBucket(cache* c, const char* str){
     return hash_djb2(str) % c->mSize;
 }
 
-static cacheNode* createEntry(const char* key, const char* data){
+static cacheNode* createEntry(const char* key, const char* header, const char* data){
     cacheNode* entry = (cacheNode*) malloc(sizeof(cacheNode));
-    entry->path = (char*) malloc(sizeof(key));
-    if(!entry->path) return NULL;
 
-    strcpy(entry->path, key);
+    if (!key || !header || !data) {
+        printf("BAD STRING >:(\n");
+        return NULL;
+    }
 
-    entry->content = (char*) malloc(sizeof(data));
-    if(!entry->content) return NULL;
-    
-    strcpy(entry->content, data);
+    entry->path = (char*) malloc(strlen(key) + 1);
+    memcpy(entry->path, key, strlen(key) + 1);
+
+    entry->header = (char*) malloc(strlen(header) + 1);
+    memcpy(entry->header, header, strlen(header) + 1);
+
+    entry->content = (char*) malloc(strlen(data) + 1);
+    memcpy(entry->content, data, strlen(data) + 1);
 
     return entry;
 }
 
 static void delCacheItem(cacheNode* node){
     free(node->path);
+    free(node->header);
     free(node->content);
     free(node);
 }
 
-cache* createCache(size_t maxSizeMB){
+cache* createCache(cache* c){
     // By default maxSizeMB oughta be 10
-    size_t mSizeB = maxSizeMB*1024*1024;
-    cache* c = (cache*) malloc(mSizeB);
 
     // Max size for the hash set hard coded to 20
     c->mSize = 10;
@@ -53,16 +57,17 @@ cache* createCache(size_t maxSizeMB){
     return c;
 }
 
-int cacheInsert(cache* c, const char* key, const char* data){
+int cacheInsert(cache* c, const char* key, const char* header ,const char* body){
     // Get bucket where key should be stored
     int bucketIndex = getBucket(c, key);
 
     // Create a new node
-    cacheNode* node = createEntry(key, data);
-
+    cacheNode* node = createEntry(key, header, body);
     // TODO Checking of current cache size and comparing to 10MB
 
-    c->cSize += sizeof(node);
+    
+
+    c->cSize += sizeof(cacheNode) + strlen(key) + strlen(header) + strlen(body) + 3;
 
     // If node creation failed
     if( node == NULL ) return -1;
@@ -86,13 +91,14 @@ void* cacheLookup(cache* c, const char* key){
     // Get the first node in the bucket
     cacheNode* node = c->buckets[bIndex];
 
-    // If that bucket was already empty don't loop through an empty linked list
-    if(node == NULL) return NULL;
+    printf("LOOKING: %s\n", key); 
 
     while(node){
-        if(strcmp(key, node->path) == 0) 
-            return node->content;
-
+        printf("NODE: %s\n", node->path);
+        if(strcmp(key, node->path) == 0){
+            printf("FOUND IT\n");
+            return node;
+        }
         // If key did not match go to the next node
         node = node->next;
     }
@@ -130,6 +136,12 @@ void destroyCache(cache* c){
     // Free all items from all buckets
     for(int i = 0; i < c->mSize; i++){
         cacheNode* n = c->buckets[i];
+
+        while(n){
+            cacheNode* next = n->next;
+            delCacheItem(n);
+            n = next;
+        }
 
         // If node is not null
         if(n) delCacheItem(n);
