@@ -11,7 +11,7 @@ typedef struct{
     int status;
     char statusMessage[256];
     char contentType[256];
-    char responseBody[4096];
+    char* responseBody;
     size_t bodyLen;
 } httpResponse;
 

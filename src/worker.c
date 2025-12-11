@@ -119,15 +119,27 @@ void* workerThread(void* arg){
             continue;
         }
 
-        httpResponse* response = (httpResponse*)malloc(sizeof(httpResponse));
+        cacheNode* node = (cacheNode*) malloc(sizeof(cacheNode));
+        ssize_t totalByteSent = 0;
+        ssize_t bytes = 0;
 
-        sem_wait(sData->sem->filledSlots);
+        /*if( ( node = cacheLookup(sData->cache, request->path)) != NULL ){
+            printf("TWAS IN CACHE\n");
 
-        sendHttpResponse(*clientFd, request, response);
+            if(( bytes = send(*clientFd, node->header, strlen(node->header), 0) ) == -1) perror("SEND");
+            totalByteSent += bytes;
 
-        sem_post(sData->sem->emptySlots);
+            if(strlen(node->content) > 0 && strcmp(request->method, "HEAD") != 0) 
+            totalByteSent += send(*clientFd, node->content, strlen(node->content), 0);
+        }else{*/
+            httpResponse* response = (httpResponse*)malloc(sizeof(httpResponse));
+            sem_wait(sData->sem->filledSlots);
+            sendHttpResponse(*clientFd, request, response);
+            sem_post(sData->sem->emptySlots);
+            free(response);
+        //}
 
-        free(response);
+        free(node);
         free(request);
 
         pthread_mutex_unlock(&pool->tMutex);
@@ -138,6 +150,8 @@ void* workerThread(void* arg){
         sem_wait(sData->sem->statsMutex);
         // Update stats
         sData->stats.activeConnetions--;
+        sData->stats.bytesTransferred += totalByteSent;
+
         sem_post(sData->sem->statsMutex);
 
         serverLog("Sent data");

@@ -17,7 +17,7 @@
 semaphore* sem;
 serverConf* config;
 master* m;
-data* sharedData;
+data* sData; // Renamed to match usage in other files
 // Socket Pair
 int sv[2];
 
@@ -31,7 +31,13 @@ static pid_t createForks(int nForks, serverConf* conf){
         else if(pid == 0){
             // CHILD PROCESS
             printf("Created child process %d\n", getpid());
-            close(sharedData->sv[0]);
+            close(sData->sv[0]);
+
+            // Initialize config and shared data pointer for this child process
+            // This avoids race conditions from initializing in http.c
+            config = (serverConf*) malloc(sizeof(serverConf));
+            if( loadConfig("server.conf", config) == -1) printf("Error loading config file in child.\n");
+            sData = getSharedData("/web_server_shm");
 
             threadPool* pool = CreateThreadPool(conf->THREAD_PER_WORKER, sem);
 
@@ -47,15 +53,15 @@ static pid_t createForks(int nForks, serverConf* conf){
 }
 
 int main(void){
-    // TODO Add options to program
     signal(SIGINT, INThandler);
+    // TODO Add options to program
 
     config = (serverConf*) malloc(sizeof(serverConf));
     if( loadConfig("server.conf", config) == -1) printf("Error loading config file.\n");
 
-    m = (master*)malloc(sizeof(master));
+    m = (master*)calloc(1, sizeof(master));
     // Init shared data
-    sharedData = createSharedData();
+    sData = createSharedData();
 
     // Init semaphores
 
@@ -63,29 +69,34 @@ int main(void){
     
     if(getpid() == parentId){
         sleep(1);
-        startStatsShow(sharedData, m);
+        startStatsShow(sData, m);
 
-        sem_post(sharedData->sem->emptySlots);
-        sem_post(sharedData->sem->queueMutex);
+        sem_post(sData->sem->emptySlots);
+        sem_post(sData->sem->queueMutex);
 
-        close(sharedData->sv[1]);
+        close(sData->sv[1]);
 
         printf("SOCKET PORT: %d\n", config->PORT);
         int socketFd = createServerSocket(config->PORT);
 
         while(1){
-            acceptConnection(socketFd, sharedData);
+            acceptConnection(socketFd, sData);
         }        
     }
 }
 
 void INThandler(int){
-    destroySharedData(sharedData);
     free(config);
 
-    free(m->statsThread);
-    free(m);
+    if(m->statsThread != NULL){
+        pthread_cancel(*m->statsThread);
+        pthread_join(*m->statsThread, NULL);
+        free(m->statsThread);
+    }
 
+    destroySharedData(sData);
+
+    free(m);
     exit(EXIT_SUCCESS);
 
 }

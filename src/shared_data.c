@@ -37,6 +37,10 @@ data* createSharedData(){
     sData->sem = (semaphore*) malloc(sizeof(semaphore));
     initSemaphores(sData->sem, 100);
 
+
+    sData->cache = (cache*) malloc(sizeof(cache)); 
+    createCache(sData->cache);
+
     // Create socket pair
     if(socketpair(AF_UNIX, SOCK_DGRAM, 0, sData->sv)  == -1) perror("Socket pair: ");
 
@@ -68,6 +72,7 @@ data* getSharedData(char* name){
 
 void destroySharedData(data* sData){
     destroySemaphores(sData->sem);
+    destroyCache(sData->cache);
     free(sData->sem);
     // UNMAP the sData variable
     munmap(sData, sizeof(data));
