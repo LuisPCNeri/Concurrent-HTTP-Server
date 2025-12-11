@@ -33,3 +33,4 @@ This project consists of a HTTP server able to employ multi-threaded concurrency
     -https://stackoverflow.com/questions/8359322/how-to-share-semaphores-between-processes-using-shared-memory
     -https://mimesniff.spec.whatwg.org/#javascript-mime-type
     -https://www.reddit.com/r/learnjavascript/comments/r4ss8t/how_to_parse_data_from_txt_file_using_javascript/
+    -https://pubs.opengroup.org/onlinepubs/007904975/functions/fread.html

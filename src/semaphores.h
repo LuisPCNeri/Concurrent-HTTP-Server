@@ -9,6 +9,7 @@ typedef struct
     sem_t* queueMutex;
     sem_t* statsMutex;
     sem_t* logMutex;
+    sem_t* cacheSem;
 } semaphore;
 
 int initSemaphores(semaphore* sem, int queueSize);

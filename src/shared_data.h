@@ -4,6 +4,7 @@
 #define MAX_QUEUE_SIZE 100
 
 #include "semaphores.h"
+#include "serverCache.h"
 
 typedef struct{
     long totalRequests;
@@ -26,6 +27,7 @@ typedef struct{
     connectionQueue queue;
     serverStats stats;
     semaphore* sem;
+    cache* cache;
     int sv[2];
 } data;
 
