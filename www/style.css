@@ -6,8 +6,12 @@ body {
 
 h1 {
     font-weight: bolder;
-
+    font-size: 3rem;
     margin: 10px
+}
+
+p {
+    margin: 2px;
 }
 
 .centered {
@@ -16,8 +20,10 @@ h1 {
     align-items: center;
 }
 
-button {
-    background-color: #363636;
+#btn {
+    transition: box-shadow 0.2s ease;
+
+    background-color: #262626;
     border-radius: 10px;
     border-color: #fafafa;
 
@@ -33,10 +39,45 @@ button {
     margin: 10px;
 }
 
+button:hover {
+  box-shadow: 0 4px 20px rgba(250, 250, 250, 0.3);
+}
+
 hr {
   border: none;
   height: 2px;
   background-color: #fafafa40;
   width: 85%; /* needed bc the div has centered container uses flex-direction: column and align-items: center*/
-  margin: 20px 0; /* optional spacing */
+  margin: 20px;
+}
+
+/* github button */
+#github-btn {
+  transition: box-shadow 0.3s ease; /* smooth animation (optional) */
+  border-radius: 50%;
+  position: fixed;
+  bottom: 35px;
+  left: 35px;
+}
+
+#github-btn:hover {
+  box-shadow: 0 4px 60px rgba(250, 250, 250, 0.6);
+}
+
+/* stats paragraph in statsPage.html*/
+#stats {
+  line-height: 2; 
+  font-size: large;
+  border: solid; 
+  border-radius: 2px; 
+  border-color: #fafafa;
+  padding: 10px;
+  padding-left: 20px;
+  padding-right: 20px;
+  margin: 20px;
+}
+
+#lastFetchedStatsDate {
+  font-size: x-small;
+  font-style: italic;
 }

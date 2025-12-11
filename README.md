@@ -7,7 +7,11 @@ Guilherme Mendes Martins NMEC 125260
 
 ## Description
 
-This project consists of a HTTP server able to employ multi-threaded concurrency in order to parse HTTP requests, using the product-consumer pattern. The entirity of the server's code is written in the C programming language. Sample HTML pages to test server functionality are also present, with one of those pages displaying stats related to the server's functioning.     
+This project consists of a HTTP server able to employ multi-threaded concurrency in order to parse HTTP requests, using the product-consumer pattern. The entirity of the server's code is written in the C programming language. Sample HTML pages to test server functionality are also present, with one of those pages displaying stats related to the server's functioning.    
+
+## How to use
+
+For information on how to use the server, read the user manual, in the markdown file `userManual.md`.
 
 ## References
 
