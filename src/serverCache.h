@@ -25,8 +25,8 @@ typedef struct{
 
     int mSize;
     size_t cSize;
-    cacheNode* LRUhead;
-    cacheNode* LRUtail;
+    cacheNode* LRUhead;         // First element in the LRU doubly linked list (Most recently used node)
+    cacheNode* LRUtail;         // Last element in the LRU doubly linked list (Least recently used node)
 
 } cache;
 

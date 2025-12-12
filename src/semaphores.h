@@ -11,7 +11,10 @@ typedef struct
     sem_t* cacheSem;
 } semaphore;
 
+// Initializes all the semaphores to their default value
 int initSemaphores(semaphore* sem, int queueSize);
+
+// Closes and Unlinks the sempahores
 void destroySemaphores(semaphore* sem);
 
 #endif

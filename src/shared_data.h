@@ -15,16 +15,7 @@ typedef struct{
     int activeConnetions;
 } serverStats;
 
-
 typedef struct{
-    int socketQueue[MAX_QUEUE_SIZE];
-    int head;
-    int tail;
-    int size;
-} connectionQueue;
-
-typedef struct{
-    connectionQueue queue;
     serverStats stats;
     semaphore* sem;
     cache* cache;
@@ -32,18 +23,12 @@ typedef struct{
 } data;
 
 // Creates a mapped region with data using sv[2] as a socket pair to communicate between processes
+// Returns a pointer to the shared memory segment just created
 data* createSharedData();
 
 // Gets the data with NAME name
+// Returns a pointer to the shared memory segment with NAME name or a NULL pointer if there was no match
 data* getSharedData(char* name);
 void destroySharedData(data*);
-
-// Adds client socket file descriptor to queue in shared data
-void sockEnqueue(connectionQueue* q, int clientFd);
-// Takes first client socket file descriptor from queue
-int sockDequeue(connectionQueue* q);
-
-// Returns 1 if queue is empty and 0 if not
-int IsQueueEmpty(connectionQueue* q);
 
 #endif

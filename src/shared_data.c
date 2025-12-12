@@ -29,11 +29,6 @@ data* createSharedData(){
 
     memset(sData, 0, sizeof(data));
 
-    // Instancialize queue variables
-    sData->queue.head = 0;
-    sData->queue.tail = 0;
-    sData->queue.size = 1;
-
     sData->sem = (semaphore*) malloc(sizeof(semaphore));
     initSemaphores(sData->sem, 100);
 
@@ -78,28 +73,4 @@ void destroySharedData(data* sData){
     munmap(sData, sizeof(data));
     // REMOVE shm link
     shm_unlink("/webServer_shm");
-}
-
-void sockEnqueue(connectionQueue* q, int fd){
-    // Add file descriptor to queue
-    q->socketQueue[q->tail] = fd;
-
-    q->tail = (q->tail + 1) % MAX_QUEUE_SIZE;
-    q->size++;
-}
-
-int sockDequeue(connectionQueue* q){
-    // Take the first connnection in queue
-    int clientFd = q->socketQueue[q->head];
-
-    // Set head index to new value
-    q->head = (q->head + 1) % MAX_QUEUE_SIZE;
-    q->size--;
-
-    return clientFd;
-}
-
-int IsQueueEmpty(connectionQueue* q){
-    // If tail and head are in the same position queue is empty
-    return q->tail == q->head;
 }

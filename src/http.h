@@ -19,6 +19,10 @@ typedef struct{
 // Returns a pointer to an http response or a null pointer if it fails
 httpResponse* createHttpResponse(httpRequest* request);
 
+// Takes a fd to a socket where a client lives
+// Uses the httpRequest object to create the response
+// This function takes care of the ipc synchronization for the stats updates inside itself
+// Sends the response to the client socket and updates the stats
 void sendHttpResponse(int clientFd, httpRequest* req, httpResponse* rep);
 
 int parseHttpRequest(const char* buffer, httpRequest* request);

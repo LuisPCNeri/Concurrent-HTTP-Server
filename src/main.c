@@ -24,7 +24,7 @@
 semaphore* sem;
 serverConf* config;
 master* m;
-data* sData; // Renamed to match usage in other files
+data* sData;
 
 char confPath[512] = "server.conf";
 
@@ -33,6 +33,7 @@ int sv[2];
 
 void INThandler(int);
 
+// Print the help message for the -h option
 static void showHelp(){
     printf( "Usage: ./server [OPTIONS]\r\n"
             "Options:\r\n"
@@ -45,6 +46,7 @@ static void showHelp(){
            YELLOW "If no options are given the program will run with the configurations present in the server.conf file." RESET "\r\n");
 }
 
+// Print the version information for the -v option
 static void showVersion(){
     printf(
         "\n=============================================================\r\n"
@@ -56,6 +58,8 @@ static void showVersion(){
 }
 
 // This function will handle all the options given to main
+// If there were any options given this function overwrites what is in the config object to reflect the changes the user made with the options
+// If the -c option was used then it loads the new config file and saves it to the same config object effectively overwriting it
 static void setOptions(int argc, char* argv[]){
 
     int opt;
@@ -143,7 +147,6 @@ int main(int argc, char* argv[]){
     signal(SIGTERM, INThandler);
     // IGNORES sigpipe signal so that if client closes connection WHILST data is being sent the server does not just die
     signal(SIGPIPE, SIG_IGN);
-    // TODO Add options to program
 
     config = (serverConf*) malloc(sizeof(serverConf));
     if( loadConfig(confPath, config) == -1) {
@@ -158,8 +161,6 @@ int main(int argc, char* argv[]){
     m = (master*)calloc(1, sizeof(master));
     // Init shared data
     sData = createSharedData();
-
-    // Init semaphores
 
     pid_t parentId = createForks(config->WORKER_NUM, config);
     
@@ -178,6 +179,7 @@ int main(int argc, char* argv[]){
     }
 }
 
+// Cleanup function that intercepts SIGINT and SIGTERM
 void INThandler(int){
     free(config);
 

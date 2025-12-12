@@ -14,6 +14,7 @@ int loadConfig(const char* fileName, serverConf* conf){
         // Line is empty so skip
         if(line[0] == '#' || line[0] == '\n') continue;
 
+        // Load the information in the config file
         if (sscanf(line, "%[^=]=%s", key, value) == 2){
             if (strcmp(key, "PORT") == 0) conf->PORT = atoi(value);
             else if(strcmp(key, "DOCUMENT_ROOT") == 0) strncpy(conf->DOC_ROOT, value, sizeof(conf->DOC_ROOT));

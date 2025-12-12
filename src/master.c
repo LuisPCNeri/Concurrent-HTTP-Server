@@ -25,6 +25,8 @@ char* statsFormat =
     "STATUS 500 COUNT: %ld\r\n"
     "TOTAL REQUESTS COUNT: %ld\n\n\n";
 
+// Prints stats in shared memory segment to terminal
+// Also updates the www/statFile.txt
 static void showStats(void* arg){
     data* sData = (data*) arg;
 
@@ -79,17 +81,15 @@ int createServerSocket(int port){
 }
 
 int acceptConnection(int socketFd, data* sharedData){
-    // TODO there should be a check to see if queue is full before accepting
-    // If queue is full send 503 Server Failure response
-
     int clientFd;
-    // TODO Log Connection accepted
     if( (clientFd = accept(socketFd, NULL, NULL)) == -1 ){
         printf("ERROR\n");
+        return -1;
     }
 
     sem_wait(sharedData->sem->emptySlots);
 
+    // TO send the fd to child processes
     char buf[1] = {0}; 
     struct iovec io = { .iov_base = buf, .iov_len = 1 };
 
@@ -112,14 +112,16 @@ int acceptConnection(int socketFd, data* sharedData){
     pMsg.msg_iov = &io;
     pMsg.msg_iovlen = 1;
 
-    if( sendmsg(sharedData->sv[0], &pMsg, 0) < 0) perror("Send message");
+    // file descriptor sent
+    if( sendmsg(sharedData->sv[0], &pMsg, 0) < 0) {
+        perror("Send message");
+        return -1;
+    }
 
     close(clientFd);
     sem_post(sharedData->sem->filledSlots);
-    // If queue is not full
+
     // CONNECTION ACCPETED
-
-
     printf(GREEN "Connection %d Accepted"RESET"\n", clientFd);
 
     return 0;

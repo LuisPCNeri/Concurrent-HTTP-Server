@@ -38,7 +38,7 @@ void serverLog(data* sData, const char* reqType, const char* path, int status, i
     FILE* fptr;
     time_t now;
 
-    // TIMESTAMP -- REQUEST TYPE -- PATH -- STATUS -- BYTES TRANSFERRED
+    // TIMESTAMP | REQUEST TYPE | PATH | STATUS | BYTES TRANSFERRED
     const char* LOG_FORMAT = "127.0.0.1 - - [%s -0800] %s %s HTTP/1.1 %d %d\n";
 
     struct tm* tInfo;
@@ -50,13 +50,12 @@ void serverLog(data* sData, const char* reqType, const char* path, int status, i
     time_str[strcspn(time_str, "\n")] = 0;
 
     // Wait for sempahore
+    // Critical region
     sem_wait(sData->sem->logMutex);
 
     long log_size = getLogSize();
 
     if (log_size > 10 * 1024 * 1024) rename("access.log", "access1.log");
-
-    // Critical region
 
     // Open file
     if( (fptr = fopen(LOG_PATH, "a")) == NULL) perror("LOG FILE: ");

@@ -6,7 +6,9 @@
 #include "shared_data.h"
 
 void serverLog(data* sData, const char* reqType, const char* path, int status, int bytesTransferred);
+
 // Write server stats in shared data to a file to be accessed by the web interface
+// Uses the most recent stats in the shared memory segment to write to www/statFile.txt
 void updateStatFile(data* sData);
 
 #endif

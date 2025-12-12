@@ -23,10 +23,13 @@ static unsigned long hash_djb2(const char* str){
     return hash;
 }
 
+// Get the bucket correspondent to the given PATH
+// Returns the bucket index
 static int getBucket(cache* c, const char* str){
     return hash_djb2(str) % c->mSize;
 }
 
+// Removes the last item from the LRU doubly linked list
 static void LRUEvict(cache* c, cacheNode* node) {
     if (node->LRUprev != NULL) {
         node->LRUprev->LRUnext = node->LRUnext;
@@ -60,6 +63,8 @@ static void LRUAdd(cache* c, cacheNode* node) {
     }
 }
 
+// Creates a cacheNode object
+// Returns a pointer to a cacheNode object or NULL if there was an error
 static cacheNode* createEntry(const char* key, const char* header, const char* data, size_t dataLen, int status){
     cacheNode* entry = (cacheNode*) malloc(sizeof(cacheNode));
 
@@ -100,7 +105,6 @@ cache* createCache(cache* c){
         conf = (serverConf*) malloc(sizeof(serverConf));
         loadConfig("server.conf", conf);
     }
-    // By default maxSizeMB oughta be 10
 
     // Max size for the hash set hard coded to 1009
     c->mSize = 1009;
@@ -125,7 +129,6 @@ int cacheInsert(cache* c, const char* key, const char* header ,const char* body,
 
     // Create a new node
     cacheNode* node = createEntry(key, header, body, body_len, status);
-    // TODO Checking of current cache size and comparing to 10MB
 
     c->cSize += sizeof(cacheNode) + strlen(key) + strlen(header) + body_len + 2;
 

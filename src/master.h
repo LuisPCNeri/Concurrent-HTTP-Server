@@ -11,8 +11,11 @@ typedef struct
 
 
 // Creates a socket for server to live in port passed as an argument. By default uses port 8080.
+// Returns the file descriptor for the server socket
 int createServerSocket(int port);
-// Accepts a connection on a new socket and returns it's file descriptor.
+
+// Accepts a connection on a new socket
+// Returns 0 on sucess and -1 on failure
 int acceptConnection(int sokectFd, data* sharedData);
 
 // Creates a new thread in the master process to show stats every 5 seconds
