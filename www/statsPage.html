@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link href="style.css" rel="stylesheet">
-    <title>Document</title>
+    <title>Stats Page</title>
 </head>
 <body>
 
@@ -16,13 +16,11 @@
         <p>Guilherme Martins | 125260</p>
 
         <hr>
-
-        <button id="btn">Refresh stats</button>
+        <h1>Server Stats</h1>
 
         <p id="stats"></p>
         <p id="lastFetchedStatsDate"></p>
         <script>
-            const BUTTON = document.getElementById("btn");
             const statsElement = document.getElementById("stats");
             const lastFetchedDateDisplay = document.getElementById("lastFetchedStatsDate");
 
@@ -74,15 +72,10 @@
                 lastFetchedDateDisplay.innerHTML = datetime;
             }
 
-            // Refresh stats when button is clicked
-            if (BUTTON) {
-                BUTTON.addEventListener('click', refreshStats);
-            } else {
-                console.error("Button element with ID 'btn' not found.");
-            }
-
-            // Optionally, refresh stats on page load
+            // refresh stats on page load
             refreshStats();
+
+            setInterval(refreshStats, 5000);
         </script>
     </div>
     
