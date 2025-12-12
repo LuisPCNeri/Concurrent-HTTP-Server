@@ -17,12 +17,9 @@
 
         <hr>
 
-        <button id="btn">Refresh stats</button>
-
         <p id="stats"></p>
         <p id="lastFetchedStatsDate"></p>
         <script>
-            const BUTTON = document.getElementById("btn");
             const statsElement = document.getElementById("stats");
             const lastFetchedDateDisplay = document.getElementById("lastFetchedStatsDate");
 
@@ -74,15 +71,10 @@
                 lastFetchedDateDisplay.innerHTML = datetime;
             }
 
-            // Refresh stats when button is clicked
-            if (BUTTON) {
-                BUTTON.addEventListener('click', refreshStats);
-            } else {
-                console.error("Button element with ID 'btn' not found.");
-            }
-
-            // Optionally, refresh stats on page load
+            // refresh stats on page load
             refreshStats();
+
+            setInterval(refreshStats, 1000);
         </script>
     </div>
     
