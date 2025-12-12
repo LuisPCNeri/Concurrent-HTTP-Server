@@ -11,7 +11,7 @@ typedef struct{
     long bytesTransferred;
     long status200;
     long status404;
-    long status500;
+    long status5xx;
     int activeConnetions;
 } serverStats;
 

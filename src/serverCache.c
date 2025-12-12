@@ -28,28 +28,35 @@ static int getBucket(cache* c, const char* str){
 }
 
 static void LRUEvict(cache* c, cacheNode* node) {
-    if (node->LRUprev) node->LRUprev->LRUnext = node->LRUnext;
-    // If it was the HEAD
-    else c->LRUhead = node->LRUnext;
+    if (node->LRUprev != NULL) {
+        node->LRUprev->LRUnext = node->LRUnext;
+    } else {
+        // This was the head
+        c->LRUhead = node->LRUnext;
+    }
 
-    if (node->LRUnext) node->LRUnext->LRUprev = node->LRUprev;
-    // If it was the TAIL
-    else c->LRUtail = node->LRUprev;
+    if (node->LRUnext != NULL) {
+        node->LRUnext->LRUprev = node->LRUprev;
+    } else {
+        // This was the tail
+        c->LRUtail = node->LRUprev;
+    }
+    node->LRUprev = NULL;
+    node->LRUnext = NULL;
 }
 
 // ADDS a node to the LRU basically making it the most recently used node
 static void LRUAdd(cache* c, cacheNode* node) {
+    node->LRUnext = c->LRUhead;
+    node->LRUprev = NULL;
 
-    // IF list is EMPTY
+    if (c->LRUhead != NULL) {
+        c->LRUhead->LRUprev = node;
+    }
+    c->LRUhead = node;
+
     if (c->LRUtail == NULL) {
         c->LRUtail = node;
-    } else {
-        // Makes it first node so nothing behind and the "OLD HEAD" would be in front
-        node->LRUnext = c->LRUhead;
-        node->LRUprev = NULL;
-
-        if (c->LRUhead) c->LRUhead->LRUprev = node;
-        c->LRUhead = node;
     }
 }
 
@@ -95,8 +102,8 @@ cache* createCache(cache* c){
     }
     // By default maxSizeMB oughta be 10
 
-    // Max size for the hash set hard coded to 20
-    c->mSize = 10;
+    // Max size for the hash set hard coded to 1009
+    c->mSize = 1009;
     c->cSize = 0;
     c->buckets = calloc(c->mSize, sizeof(cacheNode*));
 

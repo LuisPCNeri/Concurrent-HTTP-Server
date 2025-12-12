@@ -14,7 +14,7 @@ void updateStatFile(data* sData){
     // put indicator in the beggining of file
     rewind(file);
     fprintf(file, "%d,%ld,%ld,%ld,%ld,%ld", sData->stats.activeConnetions, sData->stats.bytesTransferred, sData->stats.status200,
-        sData->stats.status404, sData->stats.status500, sData->stats.totalRequests);
+        sData->stats.status404, sData->stats.status5xx, sData->stats.totalRequests);
     fflush(file);
 
     fclose(file);
@@ -34,13 +34,20 @@ int getLogSize(){
     return size;
 }
 
-void serverLog(data* sData, char* text){
+void serverLog(data* sData, const char* reqType, const char* path, int status, int bytesTransferred){
     FILE* fptr;
     time_t now;
+
+    // TIMESTAMP -- REQUEST TYPE -- PATH -- STATUS -- BYTES TRANSFERRED
+    const char* LOG_FORMAT = "127.0.0.1 - - [%s -0800] %s %s HTTP/1.1 %d %d\n";
 
     struct tm* tInfo;
     time(&now);
     tInfo = localtime(&now);
+
+    // To remove the trailing \n as it destroys the string
+    char* time_str = asctime(tInfo);
+    time_str[strcspn(time_str, "\n")] = 0;
 
     // Wait for sempahore
     sem_wait(sData->sem->logMutex);
@@ -53,8 +60,9 @@ void serverLog(data* sData, char* text){
 
     // Open file
     if( (fptr = fopen(LOG_PATH, "a")) == NULL) perror("LOG FILE: ");
+    
     // Write to file
-    fprintf(fptr, "%s\t @ %s", text, asctime(tInfo));
+    fprintf(fptr, LOG_FORMAT, time_str, reqType, path, status, bytesTransferred);
 
     fclose(fptr);
 

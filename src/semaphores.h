@@ -6,7 +6,6 @@ typedef struct
 {
     sem_t* emptySlots;
     sem_t* filledSlots;
-    sem_t* queueMutex;
     sem_t* statsMutex;
     sem_t* logMutex;
     sem_t* cacheSem;

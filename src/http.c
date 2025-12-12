@@ -8,6 +8,7 @@
 
 #include "http.h"
 #include "config.h"
+#include "logger.h"
 #include "shared_data.h"
 #include "serverCache.h"
 
@@ -108,7 +109,22 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
         return 0;
     }
 
-    // TODO CHECK FOR 503 ERROR
+    // CHECK FOR 503 ERROR
+    if( strcmp(request->path, "www/503.html") == 0 ){
+        // Setup httpResponse for 503 error
+        response->status = 503;
+        strcpy(response->statusMessage, "SERVICE UNAVAILABLE");
+        strcpy(response->contentType, "text/html");
+
+        // Set content type her to avoid the if statements bellow
+        strcpy(response->contentType, "text/html");
+
+        sem_wait(sData->sem->statsMutex);
+        sData->stats.status5xx++;
+        sem_post(sData->sem->statsMutex);
+
+        return 0;
+    }
 
     char* ext;
 
@@ -158,19 +174,21 @@ void sendHttpResponse(int clientFd, httpRequest* request, httpResponse* response
     ssize_t totalByteSent = 0;
     ssize_t bytes = 0;
 
-    if(( bytes = send(clientFd, header, header_len, 0) ) == -1) perror("SEND");
+    // USING MSG_NOSIGNAL AS TO NOT THROW SIGPIPE ERRORS (they would kill the process and that is bad)
+    if(( bytes = send(clientFd, header, header_len, MSG_NOSIGNAL) ) == -1) perror("SEND");
     totalByteSent += bytes;
     if(response->bodyLen > 0 && strcmp(request->method, "HEAD") != 0) 
-        totalByteSent += send(clientFd, response->responseBody, response->bodyLen, 0);
+        totalByteSent += send(clientFd, response->responseBody, response->bodyLen, MSG_NOSIGNAL);
+
+    // Log request information
+    serverLog(sData,request->method, request->path, response->status, (int) totalByteSent);
 
     // If file is not in the cache add it
     sem_wait(sData->sem->cacheSem);
     if( cacheLookup(sData->cache, request->path) == NULL ) {
         cacheInsert(sData->cache, request->path, header, response->responseBody, response->bodyLen, response->status);
-        sem_post(sData->sem->cacheSem);
     }
-
-    // Again to not have a deadlock this semaphore ALWAYS needs to be posted
+    // The semaphore must always be posted, regardless of cache hit or miss.
     sem_post(sData->sem->cacheSem);
 
     free(response->responseBody);

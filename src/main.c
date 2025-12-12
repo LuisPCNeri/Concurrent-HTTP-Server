@@ -46,6 +46,8 @@ static pid_t createForks(int nForks, serverConf* conf){
 
             threadPool* pool = CreateThreadPool(conf->THREAD_PER_WORKER, sem);
 
+            while(1) sleep(1);
+
             DestroyThreadPool(pool);
 
             // Process as ended so exit gracefully :)
@@ -63,7 +65,7 @@ static pid_t createForks(int nForks, serverConf* conf){
 int main(void){
     signal(SIGINT, INThandler);
     // IGNORES sigpipe signal so that if client closes connection WHILST data is being sent the server does not just die
-    
+    signal(SIGPIPE, SIG_IGN);
     // TODO Add options to program
 
     config = (serverConf*) malloc(sizeof(serverConf));
@@ -82,7 +84,6 @@ int main(void){
         startStatsShow(sData, m);
 
         sem_post(sData->sem->emptySlots);
-        sem_post(sData->sem->queueMutex);
 
         close(sData->sv[1]);
 

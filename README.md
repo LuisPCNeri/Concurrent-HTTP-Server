@@ -38,3 +38,4 @@ For information on how to use the server, read the user manual, in the markdown 
     -https://mimesniff.spec.whatwg.org/#javascript-mime-type
     -https://www.reddit.com/r/learnjavascript/comments/r4ss8t/how_to_parse_data_from_txt_file_using_javascript/
     -https://pubs.opengroup.org/onlinepubs/007904975/functions/fread.html
+    -https://linux.die.net/man/2/send

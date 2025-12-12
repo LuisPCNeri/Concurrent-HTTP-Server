@@ -19,11 +19,11 @@
 
 char* statsFormat = 
     "\n\n\nACTIVE CONNECTIONS: %d\r\n"
-    "TOTAL BYTES TRANSFERRED: %d\r\n"
-    "STATUS 200 COUNT: %d\r\n"
-    "STATUS 404 COUNT: %d\r\n"
-    "STATUS 500 COUNT: %d\r\n"
-    "TOTAL REQUESTS COUNT: %d\n\n\n";
+    "TOTAL BYTES TRANSFERRED: %ld\r\n"
+    "STATUS 200 COUNT: %ld\r\n"
+    "STATUS 404 COUNT: %ld\r\n"
+    "STATUS 500 COUNT: %ld\r\n"
+    "TOTAL REQUESTS COUNT: %ld\n\n\n";
 
 static void showStats(void* arg){
     data* sData = (data*) arg;
@@ -32,7 +32,7 @@ static void showStats(void* arg){
         sleep(5);
 
         printf(statsFormat, sData->stats.activeConnetions, sData->stats.bytesTransferred, sData->stats.status200, 
-            sData->stats.status404, sData->stats.status500, sData->stats.totalRequests);
+            sData->stats.status404, sData->stats.status5xx, sData->stats.totalRequests);
 
         // Write server stats to a file to be accessed by web interface
         updateStatFile(sData);
@@ -87,10 +87,8 @@ int acceptConnection(int socketFd, data* sharedData){
     if( (clientFd = accept(socketFd, NULL, NULL)) == -1 ){
         printf("ERROR\n");
     }
-    serverLog(sharedData, "Accepted connection");
 
     sem_wait(sharedData->sem->emptySlots);
-    sem_wait(sharedData->sem->queueMutex);
 
     char buf[1] = {0}; 
     struct iovec io = { .iov_base = buf, .iov_len = 1 };
@@ -117,20 +115,12 @@ int acceptConnection(int socketFd, data* sharedData){
     if( sendmsg(sharedData->sv[0], &pMsg, 0) < 0) perror("Send message");
 
     close(clientFd);
-    sem_post(sharedData->sem->queueMutex);
     sem_post(sharedData->sem->filledSlots);
     // If queue is not full
     // CONNECTION ACCPETED
 
 
     printf(GREEN "Connection %d Accepted"RESET"\n", clientFd);
-    // Block the semaphore for access to the stats struct
-    sem_wait(sharedData->sem->statsMutex);
-    // Update active conncetion count
-    sharedData->stats.activeConnetions++;
-    sem_post(sharedData->sem->statsMutex);
-
-    // Added connection in clientFd socket to the connection queue in shared data
 
     return 0;
 }
