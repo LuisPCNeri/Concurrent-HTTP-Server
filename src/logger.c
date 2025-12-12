@@ -54,7 +54,7 @@ void serverLog(data* sData, const char* reqType, const char* path, int status, i
 
     long log_size = getLogSize();
 
-    if (log_size > 10 * 1024 * 1024) rename("access.log", "access.log.1");
+    if (log_size > 10 * 1024 * 1024) rename("access.log", "access1.log");
 
     // Critical region
 
