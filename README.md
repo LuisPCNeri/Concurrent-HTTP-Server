@@ -42,3 +42,4 @@ For information on how to use the server, read the user manual, in the markdown 
     -https://man7.org/linux/man-pages/man3/getopt.3.html
     -https://pubs.opengroup.org/onlinepubs/009696799/functions/getopt.html
     -https://serverfault.com/questions/146605/understanding-this-error-apr-socket-recv-connection-reset-by-peer-104
+    -https://makefiletutorial.com/

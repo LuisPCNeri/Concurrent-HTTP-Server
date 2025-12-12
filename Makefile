@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -I./src
-LDFLAGS = -pthread
+LDFLAGS = -pthread -lrt
 
 SRC_DIR = src
 OBJ_DIR = obj
@@ -16,6 +16,23 @@ TARGET = server
 .PHONY: all clean
 
 all: $(TARGET)
+
+# MAKE and RUN with HELLGRIND
+hellgrind: $(TARGET)
+	valgrind --tool=helgrind ./$(TARGET)
+
+# MAKE and RUN with VALGRIND
+valgrind: $(TARGET)
+	valgrind --leak-check=full ./$(TARGET)
+
+# MAKE and RUN
+run: $(TARGET)
+	./$(TARGET)
+
+# Build and RUN OPTIMIZED
+release: CFLAGS += -O3
+release: clean all
+	./$(TARGET)
 
 # Link final program
 $(TARGET): $(OBJS)
