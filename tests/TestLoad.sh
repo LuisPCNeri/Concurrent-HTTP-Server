@@ -2,7 +2,7 @@
 
 #########################################################
 ## AUTHORS:
-##  Luís Pedro Costa Néri Correia NMEC 125624
+##  Luís Pedro Costa Néri Correia NMEC 125264
 ##  Guilherme Mendes Martins NMEC 125260
 #########################################################
 
