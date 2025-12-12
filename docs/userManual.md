@@ -13,6 +13,9 @@ To compile and build the server, use the Make file. The available commands are a
 
 - `make`: compiles and builds the server binary.
 - `make run`: compiles, builds AND runs the server binary.
+- `make release`: compiles with the -03 flag and runs the server.
+- `make hellgrind`: compiles and runs with the hellgrind race detection program.
+- `make valgrind`: compiles and runs with valgrind --leak-check=full.
 - `make test`: compiles, builds AND runs automated tests for the server.
 - `make clear`: removes any executables and object files.
 
@@ -47,3 +50,7 @@ TIMEOUT_SECONDS=30
 <hr>
 
 ### Execution instructions
+
+There is another way of running the server with that being `./server`. This is only available after `make` or `make all`. <br>
+Running the server this way has the advantage of having options available.<br>
+To see the options and what they do run `make` to create the server executable, then `./server -h` to see the help guide.
