@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <getopt.h>
 
 #include "shared_data.h"
 #include "semaphores.h"
