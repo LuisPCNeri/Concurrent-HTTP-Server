@@ -33,25 +33,22 @@ int parseHttpRequest(const char* buffer, httpRequest* request){
         return -1;
     }
     
+    //printf("PATH BEFORE CHANGE %s\n", request->path);
+    if( strcmp(request->path, "/") == 0 ) strcpy(request->path, "/index.html");
+
     // Check if the combined path length will exceed the buffer before concatenation
     size_t root_len = strlen(config->DOC_ROOT);
     size_t path_len = strlen(request->path);
-    if (root_len + path_len >= sizeof(request->path)) {
+    // The +1 is for the null terminator
+    if (root_len + path_len + 1 > sizeof(request->path)) {
         fprintf(stderr, "Error: Requested URI is too long.\n");
         // Return an error to indicate a bad request
         return -1;
     }
 
-    //printf("PATH BEFORE CHANGE %s\n", request->path);
-    if( strcmp(request->path, "/") == 0 && strlen(request->path) < 2 ) strcpy(request->path, "/index.html");
-
-    char full_path[sizeof(request->path)];
-    // Safely construct the full path without modifying the original root
-    snprintf(full_path, sizeof(full_path), "%s%s", config->DOC_ROOT, request->path);
-
-    //printf("PATH %s\n\n", request->path);
-    strncpy(request->path, full_path, sizeof(request->path) - 1);
-    request->path[sizeof(request->path) - 1] = '\0'; // Ensure null-termination
+    // Prepend DOC_ROOT to the path. We need to move the existing path to make space.
+    memmove(request->path + root_len, request->path, path_len + 1); // +1 for null terminator
+    memcpy(request->path, config->DOC_ROOT, root_len);
 
     return 0;
 }

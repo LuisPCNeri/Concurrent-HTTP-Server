@@ -26,7 +26,7 @@ void INTHandler(int){
 void* workerThread(void* arg){
     signal(SIGINT, INTHandler);
     signal(SIGTERM, INTHandler);
-    // Convert argument passed on thread create in threadPool.c to 
+
     threadPool* pool = (threadPool*) arg;
     
     data* sData = getSharedData("/web_server_shm");
@@ -125,9 +125,13 @@ void* workerThread(void* arg){
 
         // request WAS received
 
+        pthread_mutex_lock(&pool->tMutex);
+
         sem_wait(sData->sem->statsMutex);
         sData->stats.totalRequests++;
         sem_post(sData->sem->statsMutex);
+
+        pthread_mutex_unlock(&pool->tMutex);
 
         if(bytesRead > 0){
             buffer[bytesRead] = '\0';

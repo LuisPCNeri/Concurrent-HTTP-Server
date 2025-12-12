@@ -106,7 +106,7 @@ static void setOptions(int argc, char* argv[]){
 
 static pid_t createForks(int nForks, serverConf* conf){
     pid_t pid;
-    pid_t parentId;
+    pid_t parentId = 0;
     if(nForks > 0){
         if( (pid = fork()) < 0) perror("Error creating separate processes :(");
         else if(pid == 0){
