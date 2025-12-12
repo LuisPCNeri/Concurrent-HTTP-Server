@@ -1,6 +1,12 @@
 #include "semaphores.h"
 #include <fcntl.h>
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 int initSemaphores(semaphore* sems, int queueSize){
     sems->emptySlots =  sem_open(  "/ws_empty",          O_CREAT, 0666, queueSize);
     sems->filledSlots = sem_open(  "/ws_filled",         O_CREAT, 0666, 0);

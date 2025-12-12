@@ -15,6 +15,12 @@
 #include "http.h"
 #include "config.h"
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 // COLORS :)
 #define GREEN "\033[32m"
 #define RESET "\033[0m"

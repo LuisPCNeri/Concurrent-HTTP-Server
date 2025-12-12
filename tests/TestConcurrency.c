@@ -6,6 +6,12 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 #define GREEN "\033[32m"
 #define RESET "\033[0m"
 #define RED "\033[31m"

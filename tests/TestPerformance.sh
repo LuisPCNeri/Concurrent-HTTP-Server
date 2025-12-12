@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#########################################################
+## AUTHORS:
+##  Luís Pedro Costa Néri Correia NMEC 125624
+##  Guilherme Mendes Martins NMEC 125260
+#########################################################
+
 # Measure how cache impacts performance
 # The file request will be a png as it is pretty big
 

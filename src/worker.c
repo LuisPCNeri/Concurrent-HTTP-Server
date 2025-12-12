@@ -17,6 +17,12 @@
 #include "semaphores.h"
 #include "logger.h"
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 unsigned int keepRunning = 1;
 
 void INTHandler(int){

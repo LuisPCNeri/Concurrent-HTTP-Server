@@ -1,6 +1,12 @@
 #ifndef _CONFIG_H_
 #define _CONFIG_H_
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 typedef struct{
     int PORT;
     char DOC_ROOT[256];

@@ -2,6 +2,12 @@
 #include "threadPool.h"
 #include "worker.h"
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 threadPool* CreateThreadPool(int threadNum, semaphore* sems){
     // Allocs space for thread pool
     threadPool* pool = malloc(sizeof(threadPool));

@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#########################################################
+## AUTHORS:
+##  Luís Pedro Costa Néri Correia NMEC 125624
+##  Guilherme Mendes Martins NMEC 125260
+#########################################################
+
 # Pretty colors :)
 GREEN='\033[0;32m'
 RED='\033[0;31m'

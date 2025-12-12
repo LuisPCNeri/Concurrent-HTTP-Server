@@ -7,6 +7,12 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 data* createSharedData(){
     // Create shared memory for read or write
     int shm_fd = shm_open("/web_server_shm", O_CREAT | O_RDWR, 0666);

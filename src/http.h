@@ -1,6 +1,12 @@
 #ifndef _HTTP_
 #define _HTTP_
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 typedef struct{
     char method[16];
     char path[512];

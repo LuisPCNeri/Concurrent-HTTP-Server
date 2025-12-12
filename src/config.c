@@ -4,6 +4,12 @@
 
 #include "config.h"
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 int loadConfig(const char* fileName, serverConf* conf){
     FILE* fp = fopen(fileName, "r");
     if(!fp) return -1;

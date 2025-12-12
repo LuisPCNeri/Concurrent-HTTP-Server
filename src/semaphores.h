@@ -1,6 +1,12 @@
 #ifndef _SEMAPHORES_H_
 #define _SEMAPHORES_H_
 
+/*
+    AUTHORS:
+        Luís Pedro Costa Néri Correia NMEC 125624
+        Guilherme Mendes Martins NMEC 125260
+*/
+
 #include <semaphore.h>
 typedef struct
 {
