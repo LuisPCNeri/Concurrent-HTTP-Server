@@ -12,6 +12,9 @@ SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(OBJ_DIR)/%.o)
 
 TARGET = server
+TARGET_TEST = test_concurrency
+
+N ?= 10000
 
 .PHONY: all clean
 
@@ -19,7 +22,7 @@ all: $(TARGET)
 
 # MAKE and RUN with HELLGRIND
 hellgrind: $(TARGET)
-	valgrind --tool=helgrind ./$(TARGET)
+	valgrind --tool=helgrind --log-file=helgrind.log ./$(TARGET)
 
 # MAKE and RUN with VALGRIND
 valgrind: $(TARGET)
@@ -34,6 +37,17 @@ release: CFLAGS += -O3
 release: clean all
 	./$(TARGET)
 
+# Build and run concurrency test
+.PHONY: test
+test: $(TARGET) $(TARGET_TEST)
+	@echo "=== Starting server in background ==="
+	@./$(TARGET) > /dev/null 2>&1 &
+	@sleep 1 # Give server a moment to start
+	@echo "=== Running concurrency test with $(N) connections ==="
+	@./$(TARGET_TEST) $(N)
+	@echo "=== Shutting down server ==="
+	@pkill -f './$(TARGET)'
+
 # Link final program
 $(TARGET): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
@@ -47,4 +61,8 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)
 
 clean:
-	rm -rf $(OBJ_DIR) $(TARGET)
+	rm -rf $(OBJ_DIR) $(TARGET) $(TARGET_TEST)
+
+# Build concurrency test program
+$(TARGET_TEST): tests/TestConcurrency.c
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)

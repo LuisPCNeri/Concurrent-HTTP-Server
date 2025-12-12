@@ -25,6 +25,7 @@ void INTHandler(int){
 
 void* workerThread(void* arg){
     signal(SIGINT, INTHandler);
+    signal(SIGTERM, INTHandler);
     // Convert argument passed on thread create in threadPool.c to 
     threadPool* pool = (threadPool*) arg;
     
@@ -73,7 +74,7 @@ void* workerThread(void* arg){
 
         sem_wait(sData->sem->statsMutex);
         // If the connection queue is FULL, serve a 503 Service Unavailable error.
-        if(sData->stats.activeConnetions >= 100){
+        if(sData->stats.activeConnetions >= 500){
             sem_post(sData->sem->statsMutex);
 
             httpResponse* response = (httpResponse*)malloc(sizeof(httpResponse));

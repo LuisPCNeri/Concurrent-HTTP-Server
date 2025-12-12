@@ -140,6 +140,7 @@ static pid_t createForks(int nForks, serverConf* conf){
 
 int main(int argc, char* argv[]){
     signal(SIGINT, INThandler);
+    signal(SIGTERM, INThandler);
     // IGNORES sigpipe signal so that if client closes connection WHILST data is being sent the server does not just die
     signal(SIGPIPE, SIG_IGN);
     // TODO Add options to program
@@ -163,7 +164,6 @@ int main(int argc, char* argv[]){
     pid_t parentId = createForks(config->WORKER_NUM, config);
     
     if(getpid() == parentId){
-        sleep(1);
         startStatsShow(sData, m);
 
         sem_post(sData->sem->emptySlots);
