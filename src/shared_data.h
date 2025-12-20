@@ -23,7 +23,7 @@ typedef struct{
 
 typedef struct{
     serverStats stats;
-    semaphore* sem;
+    semaphore sem;
     cache* cache;
     int sv[2];
 } data;

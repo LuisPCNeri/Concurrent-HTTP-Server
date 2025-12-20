@@ -95,9 +95,9 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
         perror("Open File: ");
 
         // Update 404 stats
-        sem_wait(sData->sem->statsMutex);
+        sem_wait(sData->sem.statsMutex);
         sData->stats.status404++;
-        sem_post(sData->sem->statsMutex);
+        sem_post(sData->sem.statsMutex);
 
         printf("SERVING 404 ERROR...\n");
         
@@ -121,9 +121,9 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
         // Set content type her to avoid the if statements bellow
         strcpy(response->contentType, "text/html");
 
-        sem_wait(sData->sem->statsMutex);
+        sem_wait(sData->sem.statsMutex);
         sData->stats.status5xx++;
-        sem_post(sData->sem->statsMutex);
+        sem_post(sData->sem.statsMutex);
 
         return 0;
     }
@@ -148,9 +148,9 @@ static int getFileHeader(char* fileName, httpResponse* response, httpRequest* re
     strcpy(response->statusMessage, "OK");
 
     // Update 200 stats
-    sem_wait(sData->sem->statsMutex);
+    sem_wait(sData->sem.statsMutex);
     sData->stats.status200++;
-    sem_post(sData->sem->statsMutex);
+    sem_post(sData->sem.statsMutex);
 
     fclose(fptr);
 
@@ -186,17 +186,17 @@ void sendHttpResponse(int clientFd, httpRequest* request, httpResponse* response
     serverLog(sData,request->method, request->path, response->status, (int) totalByteSent);
 
     // If file is not in the cache add it
-    sem_wait(sData->sem->cacheSem);
+    sem_wait(sData->sem.cacheSem);
     if( cacheLookup(sData->cache, request->path) == NULL ) {
         cacheInsert(sData->cache, request->path, header, response->responseBody, response->bodyLen, response->status);
     }
     // The semaphore must always be posted, regardless of cache hit or miss.
-    sem_post(sData->sem->cacheSem);
+    sem_post(sData->sem.cacheSem);
 
     free(response->responseBody);
 
     // Update total bytes sent stat
-    sem_wait(sData->sem->statsMutex);
+    sem_wait(sData->sem.statsMutex);
     sData->stats.bytesTransferred += totalByteSent;
-    sem_post(sData->sem->statsMutex);
+    sem_post(sData->sem.statsMutex);
 }

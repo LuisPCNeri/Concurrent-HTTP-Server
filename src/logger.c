@@ -57,7 +57,7 @@ void serverLog(data* sData, const char* reqType, const char* path, int status, i
 
     // Wait for sempahore
     // Critical region
-    sem_wait(sData->sem->logMutex);
+    sem_wait(sData->sem.logMutex);
 
     long log_size = getLogSize();
 
@@ -72,5 +72,5 @@ void serverLog(data* sData, const char* reqType, const char* path, int status, i
     fclose(fptr);
 
     // Leave critical region
-    sem_post(sData->sem->logMutex);
+    sem_post(sData->sem.logMutex);
 }

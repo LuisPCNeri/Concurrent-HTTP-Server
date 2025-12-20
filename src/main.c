@@ -173,7 +173,7 @@ int main(int argc, char* argv[]){
     if(getpid() == parentId){
         startStatsShow(sData, m);
 
-        sem_post(sData->sem->emptySlots);
+        sem_post(sData->sem.emptySlots);
 
         close(sData->sv[1]);
 

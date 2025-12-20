@@ -93,7 +93,7 @@ int acceptConnection(int socketFd, data* sharedData){
         return -1;
     }
 
-    sem_wait(sharedData->sem->emptySlots);
+    sem_wait(sharedData->sem.emptySlots);
 
     // TO send the fd to child processes
     char buf[1] = {0}; 
@@ -125,7 +125,7 @@ int acceptConnection(int socketFd, data* sharedData){
     }
 
     close(clientFd);
-    sem_post(sharedData->sem->filledSlots);
+    sem_post(sharedData->sem.filledSlots);
 
     // CONNECTION ACCPETED
     printf(GREEN "Connection %d Accepted"RESET"\n", clientFd);

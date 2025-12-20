@@ -35,8 +35,8 @@ data* createSharedData(){
 
     memset(sData, 0, sizeof(data));
 
-    sData->sem = (semaphore*) malloc(sizeof(semaphore));
-    initSemaphores(sData->sem, 100);
+    //sData->sem = (semaphore*) malloc(sizeof(semaphore));
+    initSemaphores(&sData->sem, 100);
 
 
     sData->cache = (cache*) malloc(sizeof(cache)); 
@@ -72,9 +72,9 @@ data* getSharedData(char* name){
 }
 
 void destroySharedData(data* sData){
-    destroySemaphores(sData->sem);
+    destroySemaphores(&sData->sem);
     destroyCache(sData->cache);
-    free(sData->sem);
+    //free(&sData->sem);
     // UNMAP the sData variable
     munmap(sData, sizeof(data));
     // REMOVE shm link
