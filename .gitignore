@@ -1,0 +1,8 @@
+# COMPILED FILES
+*.o
+
+
+# LOGS
+*.log
+# Just a specific file I want to be ignored
+statFile.txt
